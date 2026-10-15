@@ -31,9 +31,13 @@ CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY, range_id INTEGER, nu
 CREATE INDEX IF NOT EXISTS m_a ON messages(agent_id,ts); CREATE INDEX IF NOT EXISTS m_c ON messages(client_id,ts); CREATE INDEX IF NOT EXISTS m_t ON messages(ts);
 CREATE TABLE IF NOT EXISTS ledger(id INTEGER PRIMARY KEY, user_id INTEGER, amount INTEGER, kind TEXT, ref TEXT, ts INTEGER);
 CREATE INDEX IF NOT EXISTS l_u ON ledger(user_id);
+CREATE TABLE IF NOT EXISTS api_keys(id INTEGER PRIMARY KEY, name TEXT NOT NULL, hash TEXT UNIQUE NOT NULL, created_at INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS announcements(id INTEGER PRIMARY KEY, title TEXT, body TEXT, ts INTEGER, expires INTEGER);
-CREATE TABLE IF NOT EXISTS api_keys(id INTEGER PRIMARY KEY, name TEXT, hash TEXT UNIQUE, created_at INTEGER, revoked INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, user_id INTEGER, action TEXT, detail TEXT, ip TEXT, ts INTEGER);`);
+CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, user_id INTEGER, action TEXT, detail TEXT, ip TEXT, ts INTEGER);
+CREATE TABLE IF NOT EXISTS payouts(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, amount INTEGER NOT NULL, method TEXT NOT NULL, details TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', ts INTEGER NOT NULL, processed_at INTEGER);
+CREATE INDEX IF NOT EXISTS p_u ON payouts(user_id);
+CREATE TABLE IF NOT EXISTS support_messages(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, sender_name TEXT NOT NULL, text TEXT NOT NULL, is_admin INTEGER NOT NULL DEFAULT 0, ts INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS sm_u ON support_messages(user_id,ts);`);
 
 // ---------- helpers ----------
 const all = (s, ...p) => db.prepare(s).all(...p), one = (s, ...p) => db.prepare(s).get(...p), run = (s, ...p) => db.prepare(s).run(...p);
@@ -537,6 +541,73 @@ add('GET', '/api/ledger', ['agent', 'client'], ({ u }) => ({
   balance: one('SELECT COALESCE(SUM(amount),0) b FROM ledger WHERE user_id=?', u.id).b,
   rows: all('SELECT ts,amount,kind,ref FROM ledger WHERE user_id=? ORDER BY id DESC LIMIT 200', u.id)
 }));
+
+// ---------- payouts ----------
+add('GET', '/api/payouts', ALL, ({ u }) => {
+  if (u.role === 'admin') {
+    return all("SELECT p.*, (SELECT username FROM users x WHERE x.id=p.user_id) username, (SELECT full_name FROM users x WHERE x.id=p.user_id) full_name FROM payouts p ORDER BY (p.status='pending') DESC, p.id DESC LIMIT 300");
+  }
+  return all("SELECT * FROM payouts WHERE user_id=? ORDER BY id DESC LIMIT 200", u.id);
+});
+
+add('POST', '/api/payouts', ['agent'], ({ u, body, ip }) => {
+  const amount = micro(body.amount);
+  if (amount <= 0) bad('Enter a valid payout amount');
+  const bal = one('SELECT COALESCE(SUM(amount),0) b FROM ledger WHERE user_id=?', u.id).b;
+  if (amount > bal) bad(`Amount exceeds available balance (${(bal / 1e6).toFixed(4)} USD)`);
+  const method = S(body.method || 'bKash', 40);
+  const details = S(body.details, 300);
+  if (!details) bad('Payment account or wallet details are required');
+  const pid = Number(run('INSERT INTO payouts(user_id,amount,method,details,status,ts) VALUES(?,?,?,?,?,?)', u.id, amount, method, details, 'pending', Date.now()).lastInsertRowid);
+  run('INSERT INTO ledger(user_id,amount,kind,ref,ts) VALUES(?,?,?,?,?)', u.id, -amount, 'payout_hold', `REQ#${pid}`, Date.now());
+  audit(u, 'payout.request', `${(amount / 1e6).toFixed(4)} USD via ${method}`, ip);
+  emit(admins(), 'refresh', { toast: `New payout request from ${u.username}: $${(amount / 1e6).toFixed(2)}` });
+  return { ok: true, id: pid };
+});
+
+add('POST', '/api/admin/payouts/:id/status', ['admin'], ({ u, p, body, ip }) => {
+  const reqId = int(p.id);
+  const row = one('SELECT * FROM payouts WHERE id=?', reqId);
+  if (!row) bad('Payout request not found', 404);
+  const st = S(body.status, 20);
+  if (!['approved', 'rejected', 'paid'].includes(st)) bad('Invalid status');
+  run('UPDATE payouts SET status=?,processed_at=? WHERE id=?', st, Date.now(), row.id);
+  if (st === 'rejected' && row.status === 'pending') {
+    run('INSERT INTO ledger(user_id,amount,kind,ref,ts) VALUES(?,?,?,?,?)', row.user_id, row.amount, 'payout_refund', `REJ#${row.id}`, Date.now());
+  }
+  audit(u, 'payout.status', `#${row.id} -> ${st}`, ip);
+  emit([row.user_id], 'refresh', { toast: `Your payout request #${row.id} was marked as ${st}` });
+  return { ok: true };
+});
+
+// ---------- support chat ----------
+add('GET', '/api/support', ALL, ({ u, q }) => {
+  const uid = (u.role === 'admin' && q.user_id) ? int(q.user_id) : u.id;
+  const msgs = all('SELECT * FROM support_messages WHERE user_id=? ORDER BY id ASC LIMIT 200', uid);
+  const users = u.role === 'admin' ? all("SELECT DISTINCT u.id, u.username, u.full_name, (SELECT MAX(ts) FROM support_messages s WHERE s.user_id=u.id) last_msg FROM users u WHERE u.id IN (SELECT DISTINCT user_id FROM support_messages) ORDER BY last_msg DESC") : [];
+  return { messages: msgs, users, active_uid: uid };
+});
+
+add('POST', '/api/support', ALL, ({ u, body, ip }) => {
+  const text = S(body.text, 2000);
+  if (!text) bad('Message cannot be empty');
+  const targetUid = (u.role === 'admin' && body.user_id) ? int(body.user_id) : u.id;
+  run('INSERT INTO support_messages(user_id,sender_name,text,is_admin,ts) VALUES(?,?,?,?,?)', targetUid, u.full_name || u.username, text, u.role === 'admin' ? 1 : 0, Date.now());
+  const notify = u.role === 'admin' ? [targetUid] : admins();
+  emit(notify, 'message', { toast: `New message from ${u.username}` });
+  return { ok: true };
+});
+
+// ---------- test SMS simulator ----------
+add('POST', '/api/test-sms', ALL, ({ u, body, ip }) => {
+  const num = S(body.number, 20).replace(/\D/g, '');
+  if (!num) bad('Please select or enter a valid number');
+  const cli = S(body.cli || 'VERIFY', 40);
+  const text = S(body.text || `Your verification code is ${Math.floor(100000 + Math.random() * 900000)}`, 500);
+  const res = ingest({ number: num, cli, text, ts: Date.now() });
+  audit(u, 'test_sms', `${num} from ${cli}`, ip);
+  return { ok: true, result: res };
+});
 
 // ---------- public APIs: provider message ingest + token CDR ----------
 function ingest(m) {
