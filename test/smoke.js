@@ -1,7 +1,7 @@
 // Run: node test/smoke.js   — starts a temporary server and walks through the whole flow.
 const { spawn } = require('child_process'), path = require('path'), fs = require('fs'), os = require('os');
 const PORT = 3999, BASE = `http://localhost:${PORT}`, DB = path.join(os.tmpdir(), 'msi-smoke-' + Date.now() + '.db');
-const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js'), '--port', String(PORT)], { env: { ...process.env, PORT: String(PORT), DB_FILE: DB, ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: 'AdminPass123' }, stdio: 'ignore' });
+const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], { env: { ...process.env, PORT, DB_FILE: DB, ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: 'AdminPass123' }, stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const sess = {};
@@ -18,7 +18,7 @@ async function call(who, method, url, body, hdr = {}) {
   fetch(BASE + '/api/events', { headers: { Cookie: sess.admin }, signal: ctl.signal }).then(async r => { const rd = r.body.getReader(), dec = new TextDecoder(); for (;;) { const { value, done } = await rd.read(); if (done) break; ev.push(dec.decode(value)); } }).catch(() => {});
   await sleep(300);
   let r = await call('x', 'POST', '/api/register', { username: 'agent1', password: 'agentpass1', full_name: 'Agent One', email: 'a@b.co', whatsapp: '8801', country: 'BD' }); ok(r.s === 200, 'register');
-  r = await call('agent', 'POST', '/api/login', { username: 'agent1', password: 'agentpass1' }); ok(r.s === 403, 'pending agent cannot log in (' + (r.j.error || '') + ')');
+  r = await call('agent', 'POST', '/api/login', { username: 'agent1', password: 'agentpass1' }); ok(r.s === 403, 'pending agent cannot log in (' + r.j.error + ')');
   await sleep(300); ok(ev.join('').includes('account'), 'admin received real-time registration event');
   r = await call('admin', 'GET', '/api/admin/users?status=pending'); ok(r.j.length === 1, 'pending user visible to admin'); const aid = r.j[0].id;
   r = await call('admin', 'POST', `/api/admin/users/${aid}/status`, { status: 'active' }); ok(r.s === 200, 'admin approves');
@@ -47,11 +47,12 @@ async function call(who, method, url, body, hdr = {}) {
   const me = await call('agent', 'GET', '/api/me');
   r = await call('x', 'GET', `/api/v2/cdr?token=${me.j.api_token}&records=10`); ok(r.j.status === 'success' && r.j.total === 2, 'token CDR API works');
   r = await call('agent', 'POST', '/api/numbers/request', { range_id: rid, qty: 5 }); ok(r.j.allocated === 1, 'last free number allocated (partial fulfilment)');
-  r = await call('agent', 'POST', '/api/numbers/request', { range_id: rid, qty: 1 }); ok(r.s === 400, 'no stock left -> clear error (' + (r.j.error || '') + ')');
+  r = await call('agent', 'POST', '/api/numbers/request', { range_id: rid, qty: 1 }); ok(r.s === 400, 'no stock left -> clear error (' + r.j.error + ')');
   r = await call('admin', 'POST', `/api/admin/users/${cid}/status`, { status: 'suspended' }); r = await call('client', 'GET', '/api/me'); ok(r.s === 401, 'suspended client loses access immediately');
   r = await call('admin', 'GET', '/api/admin/audit'); ok(r.j.length >= 8, 'audit log written');
   r = await fetch(BASE + '/api/me'); ok(r.status === 401, 'API needs login');
   r = await fetch(BASE + '/api/logout', { method: 'POST' }); ok(r.status === 403, 'CSRF header required');
+  r = await fetch(BASE + '/../server.js'); ok(r.status !== 200 || !(await r.text()).includes('DatabaseSync'), 'no path traversal');
   ctl.abort(); srv.kill(); try { fs.rmSync(DB, { force: true }); } catch {}
   console.log(fails ? `\n${fails} check(s) FAILED` : '\nAll checks passed'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); srv.kill(); process.exit(1); });

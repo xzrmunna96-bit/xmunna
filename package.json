@@ -1,7 +1,10 @@
 {
   "name": "msi-sms",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
+  "description": "MSI SMS - admin, agent and client panels with real-time updates. No npm packages required.",
+  "main": "server.js",
+  "engines": { "node": ">=22.13" },
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
