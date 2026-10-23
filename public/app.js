@@ -43,7 +43,7 @@ const P = {
 };
 
 const S = n => `<svg class="i" viewBox="0 0 24 24">${P[n] || P.dash}</svg>`;
-const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fm = n => (n / 1e6).toFixed(4), ft = t => t ? new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : '—';
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -57,41 +57,166 @@ const OPEN_GRPS = new Set(); // Tracks open accordion menu sections in sidebar
 // --------------------------------------------------------------------------
 const COUNTRIES = [
   { name: 'Bangladesh', code: 'BD', dial: '+880', flag: '🇧🇩', region: 'Asia' },
-  { name: 'India', code: 'IN', dial: '+91', flag: '🇮🇳', region: 'Asia' },
-  { name: 'Pakistan', code: 'PK', dial: '+92', flag: '🇵🇰', region: 'Asia' },
-  { name: 'Nepal', code: 'NP', dial: '+977', flag: '🇳🇵', region: 'Asia' },
-  { name: 'Sri Lanka', code: 'LK', dial: '+94', flag: '🇱🇰', region: 'Asia' },
-  { name: 'China', code: 'CN', dial: '+86', flag: '🇨🇳', region: 'Asia' },
-  { name: 'Japan', code: 'JP', dial: '+81', flag: '🇯🇵', region: 'Asia' },
-  { name: 'South Korea', code: 'KR', dial: '+82', flag: '🇰🇷', region: 'Asia' },
-  { name: 'Malaysia', code: 'MY', dial: '+60', flag: '🇲🇾', region: 'Asia' },
-  { name: 'Singapore', code: 'SG', dial: '+65', flag: '🇸🇬', region: 'Asia' },
-  { name: 'Indonesia', code: 'ID', dial: '+62', flag: '🇮🇩', region: 'Asia' },
-  { name: 'Thailand', code: 'TH', dial: '+66', flag: '🇹🇭', region: 'Asia' },
-  { name: 'Vietnam', code: 'VN', dial: '+84', flag: '🇻🇳', region: 'Asia' },
-  { name: 'Philippines', code: 'PH', dial: '+63', flag: '🇵🇭', region: 'Asia' },
-  { name: 'United Arab Emirates', code: 'AE', dial: '+971', flag: '🇦🇪', region: 'Middle East' },
-  { name: 'Saudi Arabia', code: 'SA', dial: '+966', flag: '🇸🇦', region: 'Middle East' },
-  { name: 'Qatar', code: 'QA', dial: '+974', flag: '🇶🇦', region: 'Middle East' },
-  { name: 'Kuwait', code: 'KW', dial: '+965', flag: '🇰🇼', region: 'Middle East' },
-  { name: 'Oman', code: 'OM', dial: '+968', flag: '🇴🇲', region: 'Middle East' },
-  { name: 'Bahrain', code: 'BH', dial: '+973', flag: '🇧🇭', region: 'Middle East' },
-  { name: 'Turkey', code: 'TR', dial: '+90', flag: '🇹🇷', region: 'Middle East' },
-  { name: 'United States', code: 'US', dial: '+1', flag: '🇺🇸', region: 'Americas' },
-  { name: 'Canada', code: 'CA', dial: '+1', flag: '🇨🇦', region: 'Americas' },
-  { name: 'United Kingdom', code: 'GB', dial: '+44', flag: '🇬🇧', region: 'Europe' },
-  { name: 'Germany', code: 'DE', dial: '+49', flag: '🇩🇪', region: 'Europe' },
-  { name: 'France', code: 'FR', dial: '+33', flag: '🇫🇷', region: 'Europe' },
-  { name: 'Italy', code: 'IT', dial: '+39', flag: '🇮🇹', region: 'Europe' },
-  { name: 'Spain', code: 'ES', dial: '+34', flag: '🇪🇸', region: 'Europe' },
-  { name: 'Netherlands', code: 'NL', dial: '+31', flag: '🇳🇱', region: 'Europe' },
+  { name: 'Afghanistan', code: 'AF', dial: '+93', flag: '🇦🇫', region: 'Asia' },
+  { name: 'Albania', code: 'AL', dial: '+355', flag: '🇦🇱', region: 'Europe' },
+  { name: 'Algeria', code: 'DZ', dial: '+213', flag: '🇩🇿', region: 'Africa' },
+  { name: 'Andorra', code: 'AD', dial: '+376', flag: '🇦🇩', region: 'Europe' },
+  { name: 'Angola', code: 'AO', dial: '+244', flag: '🇦🇴', region: 'Africa' },
+  { name: 'Argentina', code: 'AR', dial: '+54', flag: '🇦🇷', region: 'Americas' },
+  { name: 'Armenia', code: 'AM', dial: '+374', flag: '🇦🇲', region: 'Asia' },
   { name: 'Australia', code: 'AU', dial: '+61', flag: '🇦🇺', region: 'Oceania' },
-  { name: 'New Zealand', code: 'NZ', dial: '+64', flag: '🇳🇿', region: 'Oceania' },
+  { name: 'Austria', code: 'AT', dial: '+43', flag: '🇦🇹', region: 'Europe' },
+  { name: 'Azerbaijan', code: 'AZ', dial: '+994', flag: '🇦🇿', region: 'Asia' },
+  { name: 'Bahamas', code: 'BS', dial: '+1242', flag: '🇧🇸', region: 'Americas' },
+  { name: 'Bahrain', code: 'BH', dial: '+973', flag: '🇧🇭', region: 'Middle East' },
+  { name: 'Barbados', code: 'BB', dial: '+1246', flag: '🇧🇧', region: 'Americas' },
+  { name: 'Belarus', code: 'BY', dial: '+375', flag: '🇧🇾', region: 'Europe' },
+  { name: 'Belgium', code: 'BE', dial: '+32', flag: '🇧🇪', region: 'Europe' },
+  { name: 'Belize', code: 'BZ', dial: '+501', flag: '🇧🇿', region: 'Americas' },
+  { name: 'Benin', code: 'BJ', dial: '+229', flag: '🇧🇯', region: 'Africa' },
+  { name: 'Bhutan', code: 'BT', dial: '+975', flag: '🇧🇹', region: 'Asia' },
+  { name: 'Bolivia', code: 'BO', dial: '+591', flag: '🇧🇴', region: 'Americas' },
+  { name: 'Bosnia and Herzegovina', code: 'BA', dial: '+387', flag: '🇧🇦', region: 'Europe' },
+  { name: 'Botswana', code: 'BW', dial: '+267', flag: '🇧🇼', region: 'Africa' },
   { name: 'Brazil', code: 'BR', dial: '+55', flag: '🇧🇷', region: 'Americas' },
-  { name: 'South Africa', code: 'ZA', dial: '+27', flag: '🇿🇦', region: 'Africa' },
+  { name: 'Brunei', code: 'BN', dial: '+673', flag: '🇧🇳', region: 'Asia' },
+  { name: 'Bulgaria', code: 'BG', dial: '+359', flag: '🇧🇬', region: 'Europe' },
+  { name: 'Burkina Faso', code: 'BF', dial: '+226', flag: '🇧🇫', region: 'Africa' },
+  { name: 'Burundi', code: 'BI', dial: '+257', flag: '🇧🇮', region: 'Africa' },
+  { name: 'Cambodia', code: 'KH', dial: '+855', flag: '🇰🇭', region: 'Asia' },
+  { name: 'Cameroon', code: 'CM', dial: '+237', flag: '🇨🇲', region: 'Africa' },
+  { name: 'Canada', code: 'CA', dial: '+1', flag: '🇨🇦', region: 'Americas' },
+  { name: 'Chile', code: 'CL', dial: '+56', flag: '🇨🇱', region: 'Americas' },
+  { name: 'China', code: 'CN', dial: '+86', flag: '🇨🇳', region: 'Asia' },
+  { name: 'Colombia', code: 'CO', dial: '+57', flag: '🇨🇴', region: 'Americas' },
+  { name: 'Costa Rica', code: 'CR', dial: '+506', flag: '🇨🇷', region: 'Americas' },
+  { name: 'Croatia', code: 'HR', dial: '+385', flag: '🇭🇷', region: 'Europe' },
+  { name: 'Cuba', code: 'CU', dial: '+53', flag: '🇨🇺', region: 'Americas' },
+  { name: 'Cyprus', code: 'CY', dial: '+357', flag: '🇨🇾', region: 'Europe' },
+  { name: 'Czechia', code: 'CZ', dial: '+420', flag: '🇨🇿', region: 'Europe' },
+  { name: 'Denmark', code: 'DK', dial: '+45', flag: '🇩🇰', region: 'Europe' },
+  { name: 'Djibouti', code: 'DJ', dial: '+253', flag: '🇩🇯', region: 'Africa' },
+  { name: 'Dominican Republic', code: 'DO', dial: '+1809', flag: '🇩🇴', region: 'Americas' },
+  { name: 'Ecuador', code: 'EC', dial: '+593', flag: '🇪🇨', region: 'Americas' },
   { name: 'Egypt', code: 'EG', dial: '+20', flag: '🇪🇬', region: 'Africa' },
+  { name: 'El Salvador', code: 'SV', dial: '+503', flag: '🇸🇻', region: 'Americas' },
+  { name: 'Estonia', code: 'EE', dial: '+372', flag: '🇪🇪', region: 'Europe' },
+  { name: 'Ethiopia', code: 'ET', dial: '+251', flag: '🇪🇹', region: 'Africa' },
+  { name: 'Fiji', code: 'FJ', dial: '+679', flag: '🇫🇯', region: 'Oceania' },
+  { name: 'Finland', code: 'FI', dial: '+358', flag: '🇫🇮', region: 'Europe' },
+  { name: 'France', code: 'FR', dial: '+33', flag: '🇫🇷', region: 'Europe' },
+  { name: 'Georgia', code: 'GE', dial: '+995', flag: '🇬🇪', region: 'Asia' },
+  { name: 'Germany', code: 'DE', dial: '+49', flag: '🇩🇪', region: 'Europe' },
+  { name: 'Ghana', code: 'GH', dial: '+233', flag: '🇬🇭', region: 'Africa' },
+  { name: 'Greece', code: 'GR', dial: '+30', flag: '🇬🇷', region: 'Europe' },
+  { name: 'Guatemala', code: 'GT', dial: '+502', flag: '🇬🇹', region: 'Americas' },
+  { name: 'Guinea', code: 'GN', dial: '+224', flag: '🇬🇳', region: 'Africa' },
+  { name: 'Guyana', code: 'GY', dial: '+592', flag: '🇬🇾', region: 'Americas' },
+  { name: 'Haiti', code: 'HT', dial: '+509', flag: '🇭🇹', region: 'Americas' },
+  { name: 'Honduras', code: 'HN', dial: '+504', flag: '🇭🇳', region: 'Americas' },
+  { name: 'Hong Kong', code: 'HK', dial: '+852', flag: '🇭🇰', region: 'Asia' },
+  { name: 'Hungary', code: 'HU', dial: '+36', flag: '🇭🇺', region: 'Europe' },
+  { name: 'Iceland', code: 'IS', dial: '+354', flag: '🇮🇸', region: 'Europe' },
+  { name: 'India', code: 'IN', dial: '+91', flag: '🇮🇳', region: 'Asia' },
+  { name: 'Indonesia', code: 'ID', dial: '+62', flag: '🇮🇩', region: 'Asia' },
+  { name: 'Iran', code: 'IR', dial: '+98', flag: '🇮🇷', region: 'Middle East' },
+  { name: 'Iraq', code: 'IQ', dial: '+964', flag: '🇮🇶', region: 'Middle East' },
+  { name: 'Ireland', code: 'IE', dial: '+353', flag: '🇮🇪', region: 'Europe' },
+  { name: 'Israel', code: 'IL', dial: '+972', flag: '🇮🇱', region: 'Middle East' },
+  { name: 'Italy', code: 'IT', dial: '+39', flag: '🇮🇹', region: 'Europe' },
+  { name: 'Ivory Coast', code: 'CI', dial: '+225', flag: '🇨🇮', region: 'Africa' },
+  { name: 'Jamaica', code: 'JM', dial: '+1876', flag: '🇯🇲', region: 'Americas' },
+  { name: 'Japan', code: 'JP', dial: '+81', flag: '🇯🇵', region: 'Asia' },
+  { name: 'Jordan', code: 'JO', dial: '+962', flag: '🇯🇴', region: 'Middle East' },
+  { name: 'Kazakhstan', code: 'KZ', dial: '+7', flag: '🇰🇿', region: 'Asia' },
+  { name: 'Kenya', code: 'KE', dial: '+254', flag: '🇰🇪', region: 'Africa' },
+  { name: 'Kuwait', code: 'KW', dial: '+965', flag: '🇰🇼', region: 'Middle East' },
+  { name: 'Kyrgyzstan', code: 'KG', dial: '+996', flag: '🇰🇬', region: 'Asia' },
+  { name: 'Laos', code: 'LA', dial: '+856', flag: '🇱🇦', region: 'Asia' },
+  { name: 'Latvia', code: 'LV', dial: '+371', flag: '🇱🇻', region: 'Europe' },
+  { name: 'Lebanon', code: 'LB', dial: '+961', flag: '🇱🇧', region: 'Middle East' },
+  { name: 'Liberia', code: 'LR', dial: '+231', flag: '🇱🇷', region: 'Africa' },
+  { name: 'Libya', code: 'LY', dial: '+218', flag: '🇱🇾', region: 'Africa' },
+  { name: 'Liechtenstein', code: 'LI', dial: '+423', flag: '🇱🇮', region: 'Europe' },
+  { name: 'Lithuania', code: 'LT', dial: '+370', flag: '🇱🇹', region: 'Europe' },
+  { name: 'Luxembourg', code: 'LU', dial: '+352', flag: '🇱🇺', region: 'Europe' },
+  { name: 'Macao', code: 'MO', dial: '+853', flag: '🇲🇴', region: 'Asia' },
+  { name: 'Madagascar', code: 'MG', dial: '+261', flag: '🇲🇬', region: 'Africa' },
+  { name: 'Malawi', code: 'MW', dial: '+265', flag: '🇲🇼', region: 'Africa' },
+  { name: 'Malaysia', code: 'MY', dial: '+60', flag: '🇲🇾', region: 'Asia' },
+  { name: 'Maldives', code: 'MV', dial: '+960', flag: '🇲🇻', region: 'Asia' },
+  { name: 'Mali', code: 'ML', dial: '+223', flag: '🇲🇱', region: 'Africa' },
+  { name: 'Malta', code: 'MT', dial: '+356', flag: '🇲🇹', region: 'Europe' },
+  { name: 'Mauritania', code: 'MR', dial: '+222', flag: '🇲🇷', region: 'Africa' },
+  { name: 'Mauritius', code: 'MU', dial: '+230', flag: '🇲🇺', region: 'Africa' },
+  { name: 'Mexico', code: 'MX', dial: '+52', flag: '🇲🇽', region: 'Americas' },
+  { name: 'Moldova', code: 'MD', dial: '+373', flag: '🇲🇩', region: 'Europe' },
+  { name: 'Monaco', code: 'MC', dial: '+377', flag: '🇲🇨', region: 'Europe' },
+  { name: 'Mongolia', code: 'MN', dial: '+976', flag: '🇲🇳', region: 'Asia' },
+  { name: 'Montenegro', code: 'ME', dial: '+382', flag: '🇲🇪', region: 'Europe' },
+  { name: 'Morocco', code: 'MA', dial: '+212', flag: '🇲🇦', region: 'Africa' },
+  { name: 'Mozambique', code: 'MZ', dial: '+258', flag: '🇲🇿', region: 'Africa' },
+  { name: 'Myanmar', code: 'MM', dial: '+95', flag: '🇲🇲', region: 'Asia' },
+  { name: 'Namibia', code: 'NA', dial: '+264', flag: '🇳🇦', region: 'Africa' },
+  { name: 'Nepal', code: 'NP', dial: '+977', flag: '🇳🇵', region: 'Asia' },
+  { name: 'Netherlands', code: 'NL', dial: '+31', flag: '🇳🇱', region: 'Europe' },
+  { name: 'New Zealand', code: 'NZ', dial: '+64', flag: '🇳🇿', region: 'Oceania' },
+  { name: 'Nicaragua', code: 'NI', dial: '+505', flag: '🇳🇮', region: 'Americas' },
+  { name: 'Niger', code: 'NE', dial: '+227', flag: '🇳🇪', region: 'Africa' },
   { name: 'Nigeria', code: 'NG', dial: '+234', flag: '🇳🇬', region: 'Africa' },
-  { name: 'Kenya', code: 'KE', dial: '+254', flag: '🇰🇪', region: 'Africa' }
+  { name: 'North Macedonia', code: 'MK', dial: '+389', flag: '🇲🇰', region: 'Europe' },
+  { name: 'Norway', code: 'NO', dial: '+47', flag: '🇳🇴', region: 'Europe' },
+  { name: 'Oman', code: 'OM', dial: '+968', flag: '🇴🇲', region: 'Middle East' },
+  { name: 'Pakistan', code: 'PK', dial: '+92', flag: '🇵🇰', region: 'Asia' },
+  { name: 'Palestine', code: 'PS', dial: '+970', flag: '🇵🇸', region: 'Middle East' },
+  { name: 'Panama', code: 'PA', dial: '+507', flag: '🇵🇦', region: 'Americas' },
+  { name: 'Paraguay', code: 'PY', dial: '+595', flag: '🇵🇾', region: 'Americas' },
+  { name: 'Peru', code: 'PE', dial: '+51', flag: '🇵🇪', region: 'Americas' },
+  { name: 'Philippines', code: 'PH', dial: '+63', flag: '🇵🇭', region: 'Asia' },
+  { name: 'Poland', code: 'PL', dial: '+48', flag: '🇵🇱', region: 'Europe' },
+  { name: 'Portugal', code: 'PT', dial: '+351', flag: '🇵🇹', region: 'Europe' },
+  { name: 'Qatar', code: 'QA', dial: '+974', flag: '🇶🇦', region: 'Middle East' },
+  { name: 'Romania', code: 'RO', dial: '+40', flag: '🇷🇴', region: 'Europe' },
+  { name: 'Russia', code: 'RU', dial: '+7', flag: '🇷🇺', region: 'Europe' },
+  { name: 'Rwanda', code: 'RW', dial: '+250', flag: '🇷🇼', region: 'Africa' },
+  { name: 'Saudi Arabia', code: 'SA', dial: '+966', flag: '🇸🇦', region: 'Middle East' },
+  { name: 'Senegal', code: 'SN', dial: '+221', flag: '🇸🇳', region: 'Africa' },
+  { name: 'Serbia', code: 'RS', dial: '+381', flag: '🇷🇸', region: 'Europe' },
+  { name: 'Singapore', code: 'SG', dial: '+65', flag: '🇸🇬', region: 'Asia' },
+  { name: 'Slovakia', code: 'SK', dial: '+421', flag: '🇸🇰', region: 'Europe' },
+  { name: 'Slovenia', code: 'SI', dial: '+386', flag: '🇸🇮', region: 'Europe' },
+  { name: 'Somalia', code: 'SO', dial: '+252', flag: '🇸🇴', region: 'Africa' },
+  { name: 'South Africa', code: 'ZA', dial: '+27', flag: '🇿🇦', region: 'Africa' },
+  { name: 'South Korea', code: 'KR', dial: '+82', flag: '🇰🇷', region: 'Asia' },
+  { name: 'Spain', code: 'ES', dial: '+34', flag: '🇪🇸', region: 'Europe' },
+  { name: 'Sri Lanka', code: 'LK', dial: '+94', flag: '🇱🇰', region: 'Asia' },
+  { name: 'Sudan', code: 'SD', dial: '+249', flag: '🇸🇩', region: 'Africa' },
+  { name: 'Suriname', code: 'SR', dial: '+597', flag: '🇸🇷', region: 'Americas' },
+  { name: 'Sweden', code: 'SE', dial: '+46', flag: '🇸🇪', region: 'Europe' },
+  { name: 'Switzerland', code: 'CH', dial: '+41', flag: '🇨🇭', region: 'Europe' },
+  { name: 'Syria', code: 'SY', dial: '+963', flag: '🇸🇾', region: 'Middle East' },
+  { name: 'Taiwan', code: 'TW', dial: '+886', flag: '🇹🇼', region: 'Asia' },
+  { name: 'Tajikistan', code: 'TJ', dial: '+992', flag: '🇹🇯', region: 'Asia' },
+  { name: 'Tanzania', code: 'TZ', dial: '+255', flag: '🇹🇿', region: 'Africa' },
+  { name: 'Thailand', code: 'TH', dial: '+66', flag: '🇹🇭', region: 'Asia' },
+  { name: 'Timor-Leste', code: 'TL', dial: '+670', flag: '🇹🇱', region: 'Asia' },
+  { name: 'Togo', code: 'TG', dial: '+228', flag: '🇹🇬', region: 'Africa' },
+  { name: 'Trinidad and Tobago', code: 'TT', dial: '+1868', flag: '🇹🇹', region: 'Americas' },
+  { name: 'Tunisia', code: 'TN', dial: '+216', flag: '🇹🇳', region: 'Africa' },
+  { name: 'Turkey', code: 'TR', dial: '+90', flag: '🇹🇷', region: 'Middle East' },
+  { name: 'Turkmenistan', code: 'TM', dial: '+993', flag: '🇹🇲', region: 'Asia' },
+  { name: 'Uganda', code: 'UG', dial: '+256', flag: '🇺🇬', region: 'Africa' },
+  { name: 'Ukraine', code: 'UA', dial: '+380', flag: '🇺🇦', region: 'Europe' },
+  { name: 'United Arab Emirates', code: 'AE', dial: '+971', flag: '🇦🇪', region: 'Middle East' },
+  { name: 'United Kingdom', code: 'GB', dial: '+44', flag: '🇬🇧', region: 'Europe' },
+  { name: 'United States', code: 'US', dial: '+1', flag: '🇺🇸', region: 'Americas' },
+  { name: 'Uruguay', code: 'UY', dial: '+598', flag: '🇺🇾', region: 'Americas' },
+  { name: 'Uzbekistan', code: 'UZ', dial: '+998', flag: '🇺🇿', region: 'Asia' },
+  { name: 'Venezuela', code: 'VE', dial: '+58', flag: '🇻🇪', region: 'Americas' },
+  { name: 'Vietnam', code: 'VN', dial: '+84', flag: '🇻🇳', region: 'Asia' },
+  { name: 'Yemen', code: 'YE', dial: '+967', flag: '🇾🇪', region: 'Middle East' },
+  { name: 'Zambia', code: 'ZM', dial: '+260', flag: '🇿🇲', region: 'Africa' },
+  { name: 'Zimbabwe', code: 'ZW', dial: '+263', flag: '🇿🇼', region: 'Africa' }
 ];
 
 let CURRENT_COUNTRY = COUNTRIES[0]; // Bangladesh default
@@ -101,7 +226,8 @@ let CURRENT_COUNTRY = COUNTRIES[0]; // Bangladesh default
 // --------------------------------------------------------------------------
 async function api(p, o = {}) {
   const sid = localStorage.getItem('msi_sid');
-  const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'msi', ...(sid ? { 'X-Session-ID': sid } : {}) };
+  const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'msi' };
+  if (sid) headers['X-Session-ID'] = sid;
   const r = await fetch('/api' + p, {
     method: o.method || (o.body ? 'POST' : 'GET'),
     credentials: 'include',
@@ -132,121 +258,205 @@ const toast = t => {
 // --------------------------------------------------------------------------
 // HTML BUILDERS & REUSABLE COMPONENTS
 // --------------------------------------------------------------------------
-const F = (l, n, t = 'text', o = {}) => `<div class="f"><label>${l}</label>${t === 'select' ? `<div class="sel"><select name="${n}">${o.opts.map(x => { const [v, lb] = Array.isArray(x) ? x : [x, x]; return `<option value="${esc(v)}"${String(o.val ?? '') === String(v) ? ' selected' : ''}>${esc(lb)}</option>`; }).join('')}</select></div>` : t === 'area' ? `<textarea name="${n}" style="height:140px" placeholder="${esc(o.ph || '')}"></textarea>` : `<input name="${n}" type="${t}" value="${esc(o.val ?? '')}" placeholder="${esc(o.ph || '')}"${o.req ? ' required' : ''}${t === 'password' ? ' autocomplete="new-password"' : ''}${o.step ? ` step="${o.step}"` : ''}${o.min !== undefined ? ` min="${o.min}"` : ''}>`}</div>`;
+const F = (l, n, t = 'text', o = {}) => `<div class="f"><label>${l}</label>${t === 'select' ? `<div class="sel"><select name="${n}">${(Array.isArray(o.opts) ? o.opts : []).map(x => { const [v, lb] = Array.isArray(x) ? x : [x, x]; return `<option value="${esc(v)}"${String(o.val ?? '') === String(v) ? ' selected' : ''}>${esc(lb)}</option>`; }).join('')}</select></div>` : t === 'area' ? `<textarea name="${n}" style="height:120px" placeholder="${esc(o.ph || '')}">${esc(o.val || '')}</textarea>` : `<input name="${n}" type="${t}" value="${esc(o.val ?? '')}" placeholder="${esc(o.ph || '')}"${o.req ? ' required' : ''}${t === 'password' ? ' autocomplete="new-password"' : ''}${o.step ? ` step="${o.step}"` : ''}${o.min !== undefined ? ` min="${o.min}"` : ''}>`}</div>`;
 const card = (eb, t, inner, right = '') => `<section class="card"><div class="hr"><div>${eb ? `<div class="eyebrow">${eb}</div>` : ''}<h2>${t}</h2></div>${right}</div>${inner}</section>`;
-const tbl = (cols, rows, empty) => `<div class="dw box"><table style="min-width:${cols.length * 120}px"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="muted">${empty}</td></tr>`}</tbody></table></div>`;
+const tbl = (cols, rows, empty) => `<div class="dw box"><table style="min-width:${(Array.isArray(cols) ? cols.length : 1) * 120}px"><thead><tr>${(Array.isArray(cols) ? cols : []).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${(Array.isArray(rows) && rows.length) ? rows.map(r => `<tr>${(Array.isArray(r) ? r : []).map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${Array.isArray(cols) ? cols.length : 1}" class="muted">${empty}</td></tr>`}</tbody></table></div>`;
 const form = (act, fields, btn, extra = '') => `<form class="af" data-do="${act}">${fields}${extra}<button class="btn g wide" type="submit">${btn}</button><div class="msg"></div></form>`;
-const badge = s => `<span class="badg" style="${s === 'active' ? '' : 'background:rgba(255,255,255,.08);color:var(--muted)'}">${esc(s)}</span>`;
+const badge = s => `<span class="badg" style="${s === 'active' || s === 'approved' ? '' : s === 'pending' ? 'background:rgba(234,179,8,0.18);color:#facc15' : 'background:rgba(255,255,255,.08);color:var(--muted)'}">${esc(s)}</span>`;
 const sm = (act, id, label, v = '') => `<button class="sm" data-act="${act}" data-id="${id}" data-v="${esc(v)}">${label}</button>`;
 const filt = (page, fields) => `<form class="af" data-do="filter" data-page="${page}">${fields}<button class="btn g wide" type="submit"><u>${S('search')}</u>Search</button></form>`;
-const rangeOpts = async (all = true) => { const r = await api('/range-names'); return [...(all ? [['', 'All ranges']] : []), ...r.map(x => [x.id, x.name])]; };
+const rangeOpts = async (all = true) => { const r = await api('/range-names').catch(() => []); const list = Array.isArray(r) ? r : []; const opts = all ? [['', 'All ranges']] : []; list.forEach(x => opts.push([x.id, x.name])); return opts; };
 
 // --------------------------------------------------------------------------
-// PAGES IMPLEMENTATIONS (All agent, admin and client views)
+// PAGES IMPLEMENTATIONS
 // --------------------------------------------------------------------------
 const PG = {
   async dash() {
-    const s = await api('/stats'), mx = Math.max(1, ...s.series.map(x => x.n));
-    const liveFeed = await api('/live-test-feed').catch(() => []);
-    
-    if (ME.role === 'admin') {
-      const isAway = s.admin_availability === 'away';
+    const s = await api('/stats').catch(() => ({ sms: {}, series: [] }));
+    const rawSeries = Array.isArray(s.series) ? s.series : [];
+    const mx = rawSeries.reduce((m, x) => Math.max(m, x.n || 0), 1);
+    const isAdminUser = ME.role === 'admin' || (ME.username && ME.username.toLowerCase() === 'xzrmunna12061') || ME.is_admin_eligible;
+
+    if (isAdminUser && ME.role === 'admin') {
       return `<section class="card hero">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
-          <div>
-            <div class="eyebrow">MSI SMS MULTI-TENANT ARCHITECTURE</div>
-            <h1 style="margin:4px 0 6px">Master Operations Dashboard</h1>
-            <p class="muted" style="margin:0">Real-time tenant synchronization · Multi-agent panels · Automated number routing</p>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span class="badg" style="background:${isAway ? 'rgba(234,179,8,0.18)' : 'rgba(52,211,153,0.18)'};color:${isAway ? '#facc15' : '#34d399'};border:1px solid ${isAway ? '#ca8a04' : '#059669'}">
-              ${isAway ? '🌙 Admin Away (AI Auto-Pilot Active)' : '🟢 Admin Online'}
-            </span>
-            <button class="btn nf sm" data-go="ai_ops" style="padding:7px 14px;font-size:0.85rem">AI Settings</button>
-          </div>
-        </div>
-        <div class="row" style="margin-top:16px;gap:8px">
-          <button class="btn g" data-go="tenants"><u>${S('globe')}</u>Manage Agent Panels (${s.tenants_count || 0})</button>
-          <button class="btn" data-go="num_requests"><u>${S('phone')}</u>Number Requests ${s.pending_requests ? `<span class="badge" style="position:static;display:inline-flex;margin-left:6px">${s.pending_requests}</span>` : ''}</button>
-          <button class="btn" data-go="sessions"><u>${S('key')}</u>User Sessions (${s.active_sessions || 1})</button>
-          <button class="btn" data-go="sms_test"><u>${S('pulse')}</u>⚡ Real-Time Live Test SMS</button>
+        <div>
+          <div class="eyebrow">MSI SMS PORTAL</div>
+          <h1 style="margin:4px 0 6px">${esc(ME.full_name || ME.username)}</h1>
+          <p class="muted" style="margin:0">Admin Dashboard · Real-time system monitoring</p>
         </div>
       </section>`
-      + card('Multi-Tenant Overview', 'System Metrics', `<div class="stats">
-        <div class="stat"><small>Active Agent Panels</small><strong>${esc(s.tenants_count || s.agents)}</strong></div>
+      + card('Overview', 'System Metrics', `<div class="stats">
+        <div class="stat"><small>Active Agent Panels</small><strong>${esc(s.tenants_count || s.agents || 0)}</strong></div>
         <div class="stat"><small>Active Sessions</small><strong>${esc(s.active_sessions || 1)}</strong></div>
         <div class="stat"><small>Number Requests Pending</small><strong style="${s.pending_requests ? 'color:#facc15' : ''}">${esc(s.pending_requests || 0)}</strong></div>
-        <div class="stat"><small>Free Numbers Stock</small><strong>${esc(s.free)}</strong></div>
-        <div class="stat"><small>Allocated Numbers</small><strong>${esc(s.allocated)}</strong></div>
-        <div class="stat"><small>Real-time SMS Today</small><strong style="color:var(--green)">${esc(s.sms.today)}</strong></div>
-        <div class="stat"><small>SMS This Month</small><strong>${esc(s.sms.month)}</strong></div>
-        <div class="stat"><small>SMS All Time</small><strong>${esc(s.sms.all)}</strong></div>
+        <div class="stat"><small>Free Numbers Stock</small><strong>${esc(s.free || 0)}</strong></div>
+        <div class="stat"><small>Allocated Numbers</small><strong>${esc(s.allocated || 0)}</strong></div>
+        <div class="stat"><small>Real-time SMS Today</small><strong style="color:var(--green)">${esc(s.sms?.today || 0)}</strong></div>
+        <div class="stat"><small>SMS This Month</small><strong>${esc(s.sms?.month || 0)}</strong></div>
+        <div class="stat"><small>SMS All Time</small><strong>${esc(s.sms?.all || 0)}</strong></div>
       </div>`)
-      + card('Strictly Live Data', 'Real-Time Live Test SMS Feed', `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <p class="muted" style="margin:0">Live incoming test messages synchronized straight from SQLite ingest stream.</p>
-          <button class="btn sm" data-go="sms_test" style="padding:6px 14px;font-size:0.85rem">Send Live Test SMS</button>
-        </div>
-        ${tbl(['Date / Time', 'Target MSISDN', 'Sender CLI', 'Live Message Body', 'Range'], liveFeed.map(m => [
-          ft(m.ts),
-          `<b class="mono">${esc(m.msisdn)}</b>`,
-          `<span class="badg">${esc(m.cli)}</span>`,
-          `<span style="white-space:normal;display:block;max-width:340px">${esc(m.body)}</span>`,
-          esc(m.range_name || 'Direct')
-        ]), 'No live SMS received yet. Click "Send Live Test SMS" to generate real live stream data.' )}
-      `)
-      + card('Traffic Volume', 'SMS Activity Last 7 Days', `<div class="chart">${s.series.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${x.day.slice(5)}</div>`).join('')}</div>`);
+      + card('Traffic Volume', 'SMS Activity Last 7 Days', `<div class="chart">${rawSeries.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${String(x.day || '').slice(5)}</div>`).join('')}</div>`);
     }
 
     // Agent Dashboard view
-    const isAway = s.admin_availability === 'away';
     const kp = [
-      ['Today SMS', s.sms.today],
-      ['This Week SMS', s.sms.week],
-      ['This Month SMS', s.sms.month],
-      ['All Time SMS', s.sms.all],
-      ['Balance (USD)', fm(s.balance)],
-      ['My numbers', s.numbers],
-      ['Clients', s.clients || 0],
-      ['Tenant Panel', s.tenant ? s.tenant.name : 'MSI Agent Portal']
+      ['Today SMS', s.sms?.today || 0],
+      ['This Week SMS', s.sms?.week || 0],
+      ['This Month SMS', s.sms?.month || 0],
+      ['All Time SMS', s.sms?.all || 0],
+      ['Balance (USD)', fm(s.balance || 0)],
+      ['My numbers', s.numbers || 0],
+      ['Clients', s.clients || 0]
     ];
     return `<section class="card hero">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <div class="eyebrow">${s.tenant ? esc(s.tenant.name) : 'MSI SMS AGENT PANEL'}</div>
-          <h1 style="margin:4px 0">${esc(ME.full_name || ME.username)}</h1>
-          <p class="muted" style="margin:0">Tenant ID: <span class="mono">${esc(s.tenant ? s.tenant.tenant_id : 'panel_' + ME.username)}</span> · Synchronized with Master Dashboard</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="badg" style="background:${isAway ? 'rgba(234,179,8,0.18)' : 'rgba(52,211,153,0.18)'};color:${isAway ? '#facc15' : '#34d399'}">
-            ${isAway ? '🌙 Admin Away (AI Assistant Active)' : '🟢 Admin Online'}
-          </span>
-          <button class="btn sm" data-go="chat" style="padding:6px 12px;font-size:0.85rem">Live AI Support</button>
-        </div>
-      </div>
-      <div class="row" style="margin-top:16px;gap:8px">
-        <button class="btn g" data-go="req_numbers">Request Numbers</button>
-        <button class="btn" data-go="sms_test">⚡ Test Live SMS</button>
-        <button class="btn" data-go="fnumbers">SMS Numbers (${s.numbers})</button>
-        <button class="btn" data-go="my_requests">My Requests</button>
+      <div>
+        <div class="eyebrow">AGENT DASHBOARD</div>
+        <h1 style="margin:4px 0">${esc(ME.full_name || ME.username)}</h1>
+        <p class="muted" style="margin:0">Signed in as <span class="mono">${esc(ME.username)}</span></p>
       </div>
     </section>`
     + card('Overview', 'Overview', `<div class="stats">${kp.map(([l, v]) => `<div class="stat"><small>${l}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`)
-    + card('Real-Time Live Feed', 'Recent Live SMS Activity', `
-      ${tbl(['Date / Time', 'Number', 'Sender CLI', 'Live Message Body', 'Range'], liveFeed.map(m => [
-        ft(m.ts),
-        `<b class="mono">${esc(m.msisdn)}</b>`,
-        `<span class="badg">${esc(m.cli)}</span>`,
-        `<span style="white-space:normal;display:block;max-width:320px">${esc(m.body)}</span>`,
-        esc(m.range_name || 'Standard')
-      ]), 'No incoming SMS recorded yet. Try the Live Test SMS tool above!')}
-    `)
-    + card('SMS Activity', 'SMS Last 7 Days', `<div class="chart">${s.series.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${x.day.slice(5)}</div>`).join('')}</div>`);
+    + card('SMS Activity', 'SMS Last 7 Days', `<div class="chart">${rawSeries.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${String(x.day || '').slice(5)}</div>`).join('')}</div>`);
   },
 
-  // ----- admin
+  // ----- Multi-Tenant & Admin Views
+  async tenants() {
+    const rawList = await api('/admin/tenants').catch(() => []);
+    const list = Array.isArray(rawList) ? rawList : [];
+    const rawAgents = await api('/admin/users?role=agent').catch(() => []);
+    const agents = Array.isArray(rawAgents) ? rawAgents : [];
+    const agentOpts = agents.map(a => [a.username, `${a.username} (${a.full_name || 'Agent'})`]);
+    
+    return card('Multi-Tenant Architecture', 'Agent Panels', `<p class="muted" style="margin:0 0 14px">Manage multi-tenant agent portals, custom domains, base URLs and webhooks.</p>`
+      + tbl(['Tenant Name', 'Tenant ID', 'Agent Username', 'Base URL', 'Webhook URL', 'API Key', 'Status', 'Actions'], list.map(t => [
+        `<b>${esc(t.name)}</b>`,
+        `<span class="mono">${esc(t.tenant_id)}</span>`,
+        esc(t.agent_username),
+        `<span class="mono">${esc(t.base_url || 'Default')}</span>`,
+        `<span class="mono" style="max-width:180px;display:block;overflow:hidden;text-overflow:ellipsis">${esc(t.webhook_url || 'None')}</span>`,
+        `<span class="mono" style="font-size:0.8rem">${esc(t.api_key ? t.api_key.slice(0, 12) + '...' : 'None')}</span>`,
+        badge(t.status || 'active'),
+        `${sm('regenTenantKey', t.id, 'Regen Key')} ${sm('deleteTenant', t.id, 'Delete')}`
+      ]), 'No agent panels configured yet.'))
+      + card('Multi-Tenant Architecture', 'Create New Agent Panel Tenant', form('createTenant',
+        F('Tenant Panel Name', 'name', 'text', { req: 1, ph: 'e.g. Alpha Agent Portal' }) +
+        F('Assigned Agent Username', 'agent_username', 'select', { opts: agentOpts.length ? agentOpts : [['', 'No agents registered yet']] }) +
+        F('Custom Base URL (Optional)', 'base_url', 'text', { ph: 'https://agent1.msisms.com' }) +
+        F('Webhook URL (Optional)', 'webhook_url', 'text', { ph: 'https://agent1.msisms.com/api/webhook' }) +
+        F('Auto Approve Limit per Request', 'auto_approve_limit', 'number', { val: 50, min: 0 }),
+        'Create Agent Panel'
+      ));
+  },
+
+  async num_requests() {
+    const rawReqs = await api('/admin/number-requests').catch(() => []);
+    const reqs = Array.isArray(rawReqs) ? rawReqs : [];
+    const aiSets = await api('/admin/ai-settings').catch(() => ({}));
+    const autoApprove = aiSets.auto_approve_requests;
+
+    return card('Number Allocation Queue', 'Number Requests', `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <p class="muted" style="margin:0">Review manual or automated agent number requests.</p>
+        <button class="btn sm" data-act="toggleAutoApprove" data-v="${autoApprove ? '0' : '1'}" style="padding:6px 14px;font-size:0.85rem">
+          ${autoApprove ? '⚡ Auto-Approve: ON' : '🔒 Auto-Approve: OFF (Manual Review)'}
+        </button>
+      </div>`
+      + tbl(['Requested At', 'Agent', 'Range', 'Quantity', 'Status', 'Reason / Note', 'Actions'], reqs.map(r => [
+        ft(r.created_at),
+        `<b>${esc(r.agent_username)}</b>`,
+        esc(r.range_name),
+        `<b class="mono" style="font-size:1.1rem">${r.quantity}</b>`,
+        badge(r.status),
+        esc(r.reason || 'Standard allocation'),
+        r.status === 'pending'
+          ? `${sm('approveRequest', r.id, 'Approve')} ${sm('rejectRequest', r.id, 'Reject')}`
+          : `<span class="muted">${esc(r.processed_by || 'system')}</span>`
+      ]), 'No pending or past number requests found.'))
+  },
+
+  async sessions() {
+    const rawSess = await api('/admin/sessions').catch(() => []);
+    const sess = Array.isArray(rawSess) ? rawSess : [];
+    return card('Security & Access Control', 'Active User Sessions', `<p class="muted" style="margin:0 0 14px">Manage active user sign-ins and instantly revoke suspicious or expired sessions.</p>`
+      + tbl(['Username', 'Role', 'IP Address', 'User Agent / Device', 'Created At', 'Actions'], sess.map(s => [
+        `<b>${esc(s.username)}</b>`,
+        badge(s.role),
+        `<span class="mono">${esc(s.ip || '127.0.0.1')}</span>`,
+        `<span style="max-width:240px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.user_agent)}">${esc(s.user_agent || 'Browser Session')}</span>`,
+        ft(s.created_at),
+        sm('revokeSession', s.token, 'Revoke Session')
+      ]), 'No active sessions recorded.'))
+  },
+
+  async ai_ops() {
+    const s = await api('/admin/ai-settings').catch(() => ({}));
+    const isAway = s.admin_availability === 'away';
+    
+    return card('AI System & Availability', 'Admin Auto-Pilot & Gemini Settings', `
+      <div class="note" style="margin-bottom:20px">
+        <div style="font-size:1.5rem">🤖</div>
+        <div>
+          <b style="color:var(--text)">Gemini AI Auto-Pilot Engine (Powered by gemini-3.8-flash)</b>
+          <p class="muted" style="margin:4px 0 0;font-size:0.9rem">When status is set to "Away", the AI automatically handles agent inquiries, range allocations info, and support questions in real time.</p>
+        </div>
+      </div>
+      `
+      + form('saveAiSettings',
+        F('Admin Availability Mode', 'admin_availability', 'select', {
+          opts: [
+            ['online', '🟢 Online (Manual Admin Control)'],
+            ['away', '🌙 Away (Gemini AI Auto-Pilot Active)']
+          ],
+          val: s.admin_availability
+        }) +
+        F('Auto Approve Requests Mode', 'auto_approve_requests', 'select', {
+          opts: [
+            [1, 'Instant Auto-Approve Agent Number Requests'],
+            [0, 'Manual Review for All Number Requests']
+          ],
+          val: s.auto_approve_requests ? 1 : 0
+        }) +
+        F('Custom AI System Instructions / Agent Knowledge', 'custom_ai_instructions', 'area', {
+          val: s.custom_ai_instructions,
+          ph: 'Custom instructions for Gemini AI when answering support questions...'
+        }),
+        'Save AI System Settings'
+      )
+    );
+  },
+
+  async my_requests() {
+    const rawReqs = await api('/agent/number-requests').catch(() => []);
+    const reqs = Array.isArray(rawReqs) ? rawReqs : [];
+    return card('SMS Module', 'My Number Requests', `<p class="muted" style="margin:0 0 14px">Track your number allocation requests and statuses.</p>`
+      + tbl(['Requested At', 'Range Name', 'Quantity', 'Status', 'Note / Reason'], reqs.map(r => [
+        ft(r.created_at),
+        esc(r.range_name),
+        `<b class="mono">${r.quantity}</b>`,
+        badge(r.status),
+        esc(r.reason || 'Standard allocation request')
+      ]), 'You have not submitted any number requests yet.')
+      + `<div style="margin-top:16px"><button class="btn g" data-go="req_numbers">Request More Numbers</button></div>`);
+  },
+
+  async tenant_cfg() {
+    const t = await api('/agent/tenant').catch(() => ({}));
+    return card('Multi-Tenant Configuration', 'Tenant Panel Credentials', `
+      <div class="kv"><small>Tenant Name</small><b>${esc(t.name || 'MSI Agent Panel')}</b></div>
+      <div class="kv"><small>Tenant ID</small><span class="mono">${esc(t.tenant_id || 'panel_' + ME.username)}</span></div>
+      <div class="kv"><small>Dedicated API Key</small><b class="mono" style="font-size:1rem;word-break:break-all">${esc(t.api_key || 'Not generated')}</b></div>
+      ` + form('saveAgentTenant',
+        F('Custom Base URL', 'base_url', 'text', { val: t.base_url, ph: 'https://agent.yourdomain.com' }) +
+        F('Webhook Endpoint URL', 'webhook_url', 'text', { val: t.webhook_url, ph: 'https://agent.yourdomain.com/api/webhook' }),
+        'Update Webhook & Domain'
+      )
+      + `<button class="btn" data-act="regenMyTenantKey" style="margin-top:10px">Regenerate Tenant API Key</button>`
+    );
+  },
+
+  // ----- Standard admin
   async users() {
-    const f = FIL.users || {}, rows = await api('/admin/users?' + new URLSearchParams(f));
+    const f = FIL.users || {}, rawRows = await api('/admin/users?' + new URLSearchParams(f)).catch(() => []);
+    const rows = Array.isArray(rawRows) ? rawRows : [];
     const acts = u => [u.status !== 'active' ? sm('setst', u.id, u.status === 'pending' ? 'Approve' : 'Activate', 'active') : '', u.status === 'pending' ? sm('setst', u.id, 'Reject', 'rejected') : '', u.status === 'active' && u.id !== ME.id ? sm('setst', u.id, 'Suspend', 'suspended') : '', sm('resetpw', u.id, 'Reset password')].join(' ');
     return card('User Management', 'Users', filt('users', F('Role', 'role', 'select', { opts: [['', 'All roles'], 'admin', 'agent', 'client'], val: f.role }) + F('Status', 'status', 'select', { opts: [['', 'All statuses'], 'pending', 'active', 'suspended', 'rejected'], val: f.status }) + F('Search', 'q', 'text', { val: f.q, ph: 'Username, name or email' }))
       + tbl(['User', 'Name', 'Role', 'Status', 'Contact', 'Agent', 'Numbers', 'Last login', 'Actions'], rows.map(u => [esc(u.username), esc(u.full_name), esc(u.role), badge(u.status), esc([u.email, u.whatsapp].filter(Boolean).join(' · ')), esc(u.parent || '—'), u.nums, ft(u.last_login), acts(u)]), 'No users found.'))
@@ -254,32 +464,71 @@ const PG = {
   },
 
   async aranges() {
-    const rs = await api('/admin/ranges'), opts = rs.map(r => [r.id, r.name]);
-    return card('Inventory', 'Ranges', tbl(['Range', 'Country', 'Prefix', 'Agent payout', 'Daily limit', 'Free', 'Allocated', 'Status', ''], rs.map(r => [esc(r.name), esc(r.country), esc(r.prefix), fm(r.agent_payout), r.daily_limit || 'No limit', r.free, r.allocated, badge(r.enabled ? 'active' : 'disabled'), sm('togrange', r.id, r.enabled ? 'Disable' : 'Enable', r.enabled ? '0' : '1')]), 'No ranges yet. Add your first range below.'))
-      + card('Inventory', 'Add Range', form('addRange', F('Range name', 'name', 'text', { req: 1 }) + F('Country', 'country') + F('Prefix', 'prefix') + F('Agent payout per SMS (USD)', 'agent_payout', 'number', { step: '0.000001', min: 0, val: 0 }) + F('Daily limit per agent (0 = no limit)', 'daily_limit', 'number', { min: 0, val: 0 }), 'Add range'))
-      + (rs.length ? card('Pricing', 'Update Payout & Limit', form('updRange', F('Range', 'id', 'select', { opts }) + F('New agent payout per SMS (USD)', 'agent_payout', 'number', { step: '0.000001', min: 0 }) + F('New daily limit per agent', 'daily_limit', 'number', { min: 0 }), 'Save changes'))
-        + card('Inventory', 'Upload Numbers', form('upload', F('Range', 'id', 'select', { opts }) + `<div class="f"><label>Numbers file (.txt or .csv)</label><input type="file" data-fill="text" accept=".txt,.csv,text/plain,text/csv"></div>` + F('Or paste numbers (one per line, or separated by commas)', 'text', 'area'), 'Upload numbers')) : '');
+    const rawRs = await api('/admin/ranges').catch(() => []);
+    const rs = Array.isArray(rawRs) ? rawRs : [];
+    const opts = rs.map(r => [r.id, r.name]);
+    return card('Inventory', 'Ranges', tbl(['Range', 'Country', 'Prefix', 'Supported Traffic / Services', 'Agent payout', 'Daily limit', 'Free', 'Allocated', 'Status', ''], rs.map(r => [
+      `<b>${esc(r.name)}</b>`,
+      esc(r.country || '—'),
+      esc(r.prefix || '—'),
+      `<span class="badg" style="background:rgba(96,165,250,0.15);color:#60a5fa">${esc(r.services || 'WhatsApp, Telegram, TikTok, IMO')}</span>`,
+      fm(r.agent_payout),
+      r.daily_limit || 'No limit',
+      r.free,
+      r.allocated,
+      badge(r.enabled ? 'active' : 'disabled'),
+      sm('togrange', r.id, r.enabled ? 'Disable' : 'Enable', r.enabled ? '0' : '1')
+    ]), 'No ranges yet. Add your first range below.'))
+      + card('Inventory', 'Add New Range', form('addRange',
+        F('Range name', 'name', 'text', { req: 1, ph: 'e.g. BD Grameenphone 017 Traffic Range' }) +
+        F('Country', 'country', 'text', { ph: 'e.g. Bangladesh' }) +
+        F('Prefix', 'prefix', 'text', { ph: 'e.g. 88017' }) +
+        F('Supported Services / App Traffic', 'services', 'text', { val: 'WhatsApp, Telegram, TikTok, IMO, Facebook, Google', ph: 'Comma separated apps/traffic tags' }) +
+        F('Agent payout per SMS (USD)', 'agent_payout', 'number', { step: '0.000001', min: 0, val: 0 }) +
+        F('Daily limit per agent (0 = no limit)', 'daily_limit', 'number', { min: 0, val: 0 }),
+        'Add range'
+      ))
+      + (rs.length ? card('Pricing', 'Update Payout, Services & Limit', form('updRange',
+        F('Range', 'id', 'select', { opts }) +
+        F('Supported Services / App Traffic', 'services', 'text', { ph: 'e.g. WhatsApp, Telegram, TikTok, IMO' }) +
+        F('New agent payout per SMS (USD)', 'agent_payout', 'number', { step: '0.000001', min: 0 }) +
+        F('New daily limit per agent', 'daily_limit', 'number', { min: 0 }),
+        'Save changes'
+      ))
+        + card('Inventory', 'Upload Numbers (TXT / CSV)', form('upload',
+          F('Range', 'id', 'select', { opts }) +
+          `<div class="f"><label>Select Number File (.txt or .csv)</label><input type="file" data-fill="text" accept=".txt,.csv,text/plain,text/csv"></div>` +
+          F('Or paste numbers (one number per line or separated by commas)', 'text', 'area', { ph: '8801700000001\n8801700000002\n8801700000003' }),
+          'Upload & Save Numbers'
+        )) : '');
   },
 
   async anumbers() {
-    const f = FIL.anumbers || {}, r = await api('/admin/numbers?' + new URLSearchParams(f)), ro = await rangeOpts();
-    LAST = { name: 'numbers', cols: ['Number', 'Range', 'Status', 'Agent', 'Client'], rows: r.rows.map(x => [x.msisdn, x.range, x.status, x.agent || '', x.client || '']) };
-    return card('Inventory', 'Numbers', filt('anumbers', F('Range', 'range', 'select', { opts: ro, val: f.range }) + F('Status', 'status', 'select', { opts: [['', 'All'], 'free', 'allocated'], val: f.status }) + F('Agent username', 'agent', 'text', { val: f.agent }) + F('Number', 'q', 'text', { val: f.q }))
-      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><p class="muted">Showing ${r.rows.length} of ${r.total}</p>` + tbl(['Number', 'Range', 'Status', 'Agent', 'Client', 'Last SMS'], r.rows.map(x => [esc(x.msisdn), esc(x.range), badge(x.status === 'free' ? 'free' : 'active'), esc(x.agent || '—'), esc(x.client || '—'), ft(x.last_sms)]), 'No numbers found.'));
+    const f = FIL.anumbers || {}, r = await api('/admin/numbers?' + new URLSearchParams(f)).catch(() => ({ rows: [], total: 0 })), ro = await rangeOpts();
+    const rows = Array.isArray(r.rows) ? r.rows : [];
+    LAST = { name: 'numbers', cols: ['Number', 'Range', 'Status', 'Agent', 'Client'], rows: rows.map(x => [x.msisdn, x.range, x.status, x.agent || '', x.client || '']) };
+    return card('Inventory', 'Numbers Inventory', filt('anumbers', F('Range', 'range', 'select', { opts: ro, val: f.range }) + F('Status', 'status', 'select', { opts: [['', 'All'], 'free', 'allocated'], val: f.status }) + F('Agent username', 'agent', 'text', { val: f.agent }) + F('Number', 'q', 'text', { val: f.q }))
+      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><p class="muted">Showing ${rows.length} of ${r.total || 0}</p>` + tbl(['Number', 'Range', 'Status', 'Agent', 'Client', 'Last SMS'], rows.map(x => [esc(x.msisdn), esc(x.range), badge(x.status === 'free' ? 'free' : 'active'), esc(x.agent || '—'), esc(x.client || '—'), ft(x.last_sms)]), 'No numbers found.'));
   },
 
   async keys() {
-    const ks = await api('/admin/keys');
+    const rawKs = await api('/admin/keys').catch(() => []);
+    const ks = Array.isArray(rawKs) ? rawKs : [];
     return card('Providers', 'API Keys for Incoming SMS', `<p class="muted" style="margin:0 0 14px">Give a key to the system that delivers SMS to you. It sends each message to this address:</p><div class="kv"><small>POST</small><b class="mono" style="font-size:1rem;word-break:break-all">${esc(location.origin)}/api/ingest</b></div><div class="kv"><small>Header</small><span class="mono">X-API-Key: your key</span></div><div class="kv"><small>Body (JSON, one message or {"messages":[…]})</small><span class="mono">{"number":"8801700000001","cli":"SENDER","text":"message","ts":1700000000000}</span></div>`)
       + card('Providers', 'Keys', tbl(['Name', 'Created', 'Status', ''], ks.map(k => [esc(k.name), ft(k.created_at), badge(k.revoked ? 'revoked' : 'active'), k.revoked ? '' : sm('revoke', k.id, 'Revoke')]), 'No keys yet.'))
       + card('Providers', 'Create Key', form('addKey', F('Key name', 'name', 'text', { req: 1, ph: 'e.g. provider name' }), 'Create key'));
   },
 
-  async audit() { const r = await api('/admin/audit'); return card('Security', 'Audit Log', tbl(['Time', 'Who', 'Action', 'Details', 'IP'], r.map(x => [ft(x.ts), esc(x.actor || '—'), esc(x.action), esc(x.detail), esc(x.ip)]), 'Nothing recorded yet.')); },
+  async audit() {
+    const rawR = await api('/admin/audit').catch(() => []);
+    const r = Array.isArray(rawR) ? rawR : [];
+    return card('Security', 'Audit Log', tbl(['Time', 'Who', 'Action', 'Details', 'IP'], r.map(x => [ft(x.ts), esc(x.actor || '—'), esc(x.action), esc(x.detail), esc(x.ip)]), 'Nothing recorded yet.'));
+  },
 
-  // ----- agent views
+  // ----- Agent views
   async clients() {
-    const cs = await api('/clients');
+    const rawCs = await api('/clients').catch(() => []);
+    const cs = Array.isArray(rawCs) ? rawCs : [];
     return card('Users Master', 'Clients', tbl(['Username', 'Name', 'Contact', 'Numbers', 'Status', 'Last login', ''], cs.map(c => [esc(c.username), esc(c.full_name), esc([c.email, c.whatsapp].filter(Boolean).join(' · ')), c.numbers, badge(c.status), ft(c.last_login), sm('cst', c.id, c.status === 'active' ? 'Suspend' : 'Activate', c.status === 'active' ? 'suspended' : 'active')]), 'No clients yet.'))
       + card('Users Master', 'Create Client', `<p class="muted" style="margin:0 0 14px">The client can sign in straight away with this username and password.</p>` + form('createClient', F('Username', 'username', 'text', { req: 1 }) + F('Password', 'password', 'password', { req: 1 }) + F('Full name', 'full_name') + F('Email', 'email', 'email') + F('WhatsApp', 'whatsapp') + F('Country', 'country'), 'Create client'));
   },
@@ -289,25 +538,59 @@ const PG = {
   },
 
   async franges() {
-    const rs = await api('/ranges');
-    return card('SMS Module', 'Ranges', tbl(['Range', 'Country', 'Prefix', 'Your payout', 'Free numbers', 'Daily limit left'], rs.map(r => [esc(r.name), esc(r.country), esc(r.prefix), fm(r.agent_payout), r.free, r.daily_limit ? Math.max(0, r.daily_limit - r.used) : 'No limit']), 'No ranges are available yet.'))
-      + (rs.length ? card('SMS Module', 'Request Numbers', `<p class="muted" style="margin:0 0 14px">Choose a range and how many numbers you need. They appear in My Numbers immediately.</p>` + form('requestNums', F('Range', 'range_id', 'select', { opts: rs.map(r => [r.id, `${r.name} (${r.free} free)`]) }) + F('Quantity', 'qty', 'number', { min: 1, val: 1 }), 'Request numbers')) : '');
+    const rawRs = await api('/ranges').catch(() => []);
+    const rs = Array.isArray(rawRs) ? rawRs : [];
+    const f = FIL.franges || {};
+    const searchQ = (f.q || '').toLowerCase();
+    const filtered = rs.filter(r => {
+      if (!searchQ) return true;
+      return (r.name || '').toLowerCase().includes(searchQ) ||
+             (r.services || '').toLowerCase().includes(searchQ) ||
+             (r.country || '').toLowerCase().includes(searchQ) ||
+             (r.prefix || '').includes(searchQ);
+    });
+
+    return card('SMS Module', 'SMS Ranges & Search Traffic', `<p class="muted" style="margin:0 0 12px">Search active SMS ranges by name, country prefix, or supported service traffic (WhatsApp, Telegram, TikTok, IMO, etc.).</p>`
+      + filt('franges', F('Search Ranges / Traffic Tag', 'q', 'text', { val: f.q, ph: 'Search e.g. WhatsApp, Telegram, TikTok, IMO...' }))
+      + tbl(['Range Name', 'Country / Prefix', 'Supported Service Traffic', 'Your Payout', 'Free Numbers Stock', 'Daily Limit Left'], filtered.map(r => [
+        `<b>${esc(r.name)}</b>`,
+        esc([r.country, r.prefix].filter(Boolean).join(' · ') || 'Global'),
+        `<span class="badg" style="background:rgba(124,58,237,0.18);color:#a78bfa">${esc(r.services || 'WhatsApp, Telegram, TikTok, IMO')}</span>`,
+        fm(r.agent_payout),
+        `<b style="color:var(--green)">${r.free} free</b>`,
+        r.daily_limit ? Math.max(0, r.daily_limit - r.used) : 'Unlimited'
+      ]), 'No matching ranges found.'))
+      + (rs.length ? card('SMS Module', 'Request Numbers from Selected Range', `<p class="muted" style="margin:0 0 14px">Choose a range and request a batch of numbers (minimum/maximum 500 numbers per request batch). Allocated numbers appear instantly under My Numbers.</p>`
+        + form('requestNums',
+          F('Select Active Range', 'range_id', 'select', { opts: rs.map(r => [r.id, `${r.name} (${r.free} free · ${r.services || 'WhatsApp, Telegram, TikTok'})`]) }) +
+          F('Quantity (500 numbers batch)', 'qty', 'number', { min: 1, max: 500, val: 500, req: 1 }) +
+          F('Note / Purpose (Optional)', 'notes', 'text', { ph: 'e.g. Traffic request for WhatsApp / TikTok' }),
+          'Request 500 Numbers Batch'
+        )) : '');
   },
 
   async fnumbers() {
-    const f = FIL.fnumbers || {}, isA = ME.role === 'agent', r = await api('/numbers?' + new URLSearchParams(f)), ro = await rangeOpts(), cs = isA ? await api('/clients') : [];
-    LAST = { name: 'my-numbers', cols: ['Number', 'Range', 'Client'], rows: r.rows.map(x => [x.msisdn, x.range, x.client || '']) };
-    const head = isA ? ['<input type="checkbox" class="ck" id="ca" aria-label="Select all">', 'Number', 'Range', 'Client', 'Your payout', 'Client payout', 'Last SMS'] : ['Number', 'Range', 'Payout', 'Last SMS'];
-    const rows = r.rows.map(x => isA ? [`<input type="checkbox" class="ck rk" value="${x.id}">`, esc(x.msisdn), esc(x.range), esc(x.client || '—'), fm(x.agent_payout), x.client ? fm(x.client_payout) : '—', ft(x.last_sms)] : [esc(x.msisdn), esc(x.range), fm(x.client_payout), ft(x.last_sms)]);
-    return card('SMS Module', 'SMS Numbers', filt('fnumbers', F('Range', 'range', 'select', { opts: ro, val: f.range }) + (isA ? F('Assignment', 'status', 'select', { opts: [['', 'All'], ['unassigned', 'Not assigned to a client'], ['assigned', 'Assigned to a client']], val: f.status }) : '') + F('Number', 'q', 'text', { val: f.q }))
-      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><p class="muted">Showing ${r.rows.length} of ${r.total}</p>` + tbl(head, rows, 'No numbers yet.'))
-      + (isA && r.rows.length ? card('SMS Module', 'Assign or Release Selected Numbers', `<p class="muted" style="margin:0 0 14px">Tick numbers above, then choose what to do.</p><div class="f"><label>Client</label><div class="sel"><select id="asc">${cs.map(c => `<option value="${c.id}">${esc(c.username)}</option>`).join('') || '<option value="">Create a client first</option>'}</select></div></div><div class="f"><label>Client payout per SMS (USD)</label><input id="asp" type="number" step="0.000001" min="0" value="0"></div><div class="acts"><button class="btn g" data-act="assign">Assign to client</button><button class="btn" data-act="unassign">Remove client</button><button class="btn" data-act="release">Return to stock</button></div><div class="msg" id="amsg"></div>`) : '');
+    const f = FIL.fnumbers || {}, isA = ME.role === 'agent', r = await api('/numbers?' + new URLSearchParams(f)).catch(() => ({ rows: [], total: 0 })), ro = await rangeOpts(), rawCs = isA ? await api('/clients').catch(() => []) : [];
+    const rowsList = Array.isArray(r.rows) ? r.rows : [];
+    const cs = Array.isArray(rawCs) ? rawCs : [];
+    LAST = { name: 'my-numbers', cols: ['Number', 'Range', 'Client'], rows: rowsList.map(x => [x.msisdn, x.range, x.client || '']) };
+    const head = isA ? ['<input type="checkbox" class="ck" id="ca" aria-label="Select all">', 'Phone Number (MSISDN)', 'Range Name', 'Client', 'Your Payout', 'Client Payout', 'Last SMS / OTP Received'] : ['Phone Number', 'Range Name', 'Payout', 'Last SMS'];
+    const rows = rowsList.map(x => isA ? [`<input type="checkbox" class="ck rk" value="${x.id}">`, `<b class="mono" style="font-size:1.05rem">${esc(x.msisdn)}</b>`, esc(x.range), esc(x.client || '—'), fm(x.agent_payout), x.client ? fm(x.client_payout) : '—', ft(x.last_sms)] : [`<b class="mono">${esc(x.msisdn)}</b>`, esc(x.range), fm(x.client_payout), ft(x.last_sms)]);
+    return card('SMS Module', 'My Numbers (মাই নাম্বার)', filt('fnumbers', F('Range', 'range', 'select', { opts: ro, val: f.range }) + (isA ? F('Assignment', 'status', 'select', { opts: [['', 'All Numbers'], ['unassigned', 'Not assigned to a client'], ['assigned', 'Assigned to a client']], val: f.status }) : '') + F('Search Phone Number or Traffic Service', 'q', 'text', { val: f.q, ph: 'Type phone number...' }))
+      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><p class="muted">Showing ${rowsList.length} of ${r.total || 0}</p>` + tbl(head, rows, 'No numbers allocated yet. Go to Request Numbers to add numbers.'))
+      + (isA && rowsList.length ? card('SMS Module', 'Assign or Release Selected Numbers', `<p class="muted" style="margin:0 0 14px">Tick numbers above, then choose what to do.</p><div class="f"><label>Client</label><div class="sel"><select id="asc">${cs.map(c => `<option value="${c.id}">${esc(c.username)}</option>`).join('') || '<option value="">Create a client first</option>'}</select></div></div><div class="f"><label>Client payout per SMS (USD)</label><input id="asp" type="number" step="0.000001" min="0" value="0"></div><div class="acts"><button class="btn g" data-act="assign">Assign to client</button><button class="btn" data-act="unassign">Remove client</button><button class="btn" data-act="release">Return to stock</button></div><div class="msg" id="amsg"></div>`) : '');
   },
 
   async req_numbers() {
-    const rs = await api('/ranges');
-    return card('SMS Module', 'Request Numbers from Ranges', `<p class="muted" style="margin:0 0 14px">Select an active range and request allocation. Numbers are instantly attached to your agent account.</p>`
-      + (rs.length ? form('requestNums', F('Range', 'range_id', 'select', { opts: rs.map(r => [r.id, `${r.name} (${r.free} numbers available · Payout: $${fm(r.agent_payout)})`]) }) + F('Quantity', 'qty', 'number', { min: 1, val: 1, req: 1 }), 'Request Numbers Now') : '<div class="empty"><p>No ranges available at this moment.</p></div>'));
+    const rawRs = await api('/ranges').catch(() => []);
+    const rs = Array.isArray(rawRs) ? rawRs : [];
+    return card('SMS Module', 'Request Numbers from Ranges (500 Batch)', `<p class="muted" style="margin:0 0 14px">Select an active range and request allocation (minimum/maximum 500 numbers per request batch). Numbers are instantly attached to your agent account and visible under My Numbers.</p>`
+      + (rs.length ? form('requestNums',
+        F('Select Range', 'range_id', 'select', { opts: rs.map(r => [r.id, `${r.name} (${r.free} available · ${r.services || 'WhatsApp, Telegram, TikTok, IMO'})`]) }) +
+        F('Quantity (500 numbers batch)', 'qty', 'number', { min: 1, max: 500, val: 500, req: 1 }) +
+        F('Request Note / Reason (Optional)', 'notes', 'text', { ph: 'e.g. Allocation for WhatsApp & Telegram traffic' }),
+        'Request 500 Numbers Batch Now'
+      ) : '<div class="empty"><p>No active ranges available at this moment.</p></div>'));
   },
 
   async search_messages() {
@@ -315,19 +598,32 @@ const PG = {
   },
 
   async sms_test() {
-    return card('SMS Module', 'SMS Test Panel', `<p class="muted" style="margin:0 0 16px">Simulate receiving an SMS on your allocated numbers to verify webhook routing and balance increments.</p>
-      <div class="sc">
-        <small>Testing status</small>
-        <b>Ready</b>
-      </div>
-      <div class="kv">
-        <small>Target phone number</small>
-        <span class="mono">Use any number from your SMS Numbers inventory</span>
-      </div>
-      <div class="kv">
-        <small>Test Payload Example</small>
-        <pre class="mono" style="margin:0;font-size:0.85rem">{"number":"8801700000001","cli":"TEST_OTP","text":"Your MSI SMS code is 789012"}</pre>
-      </div>`);
+    const myNums = await api('/numbers').catch(() => ({ rows: [] }));
+    const rawFeed = await api('/live-test-feed').catch(() => []);
+    const numRows = Array.isArray(myNums?.rows) ? myNums.rows : [];
+    const liveFeed = Array.isArray(rawFeed) ? rawFeed : [];
+    const numOpts = numRows.map(n => [n.msisdn, `${n.msisdn} (${n.range})`]);
+    
+    return card('Real-Time Testing', '⚡ Send Real Live Test SMS', `
+      <p class="muted" style="margin:0 0 16px">Inject a real test message into the system to verify instant WebSocket/SSE delivery and live feed update.</p>
+      ` + form('sendTestSms',
+        (numOpts.length
+          ? F('Select Target Phone Number from Inventory', 'msisdn', 'select', { opts: numOpts })
+          : F('Target Phone Number (MSISDN)', 'msisdn', 'text', { req: 1, ph: 'e.g. 8801700000001' })
+        ) +
+        F('Sender CLI / Alphabetic Sender ID', 'cli', 'text', { val: 'MSI_TEST', req: 1 }) +
+        F('Test SMS Message Body', 'body', 'area', { val: 'Your MSI SMS live verification code is ' + Math.floor(100000 + Math.random() * 900000) }),
+        '⚡ Inject Live Test SMS Now'
+      ))
+      + card('Strictly Live Data', 'Live Ingest Stream Feed', `
+        ${tbl(['Date / Time', 'Target MSISDN', 'Sender CLI', 'Live Message Body', 'Range'], liveFeed.map(m => [
+          ft(m.ts),
+          `<b class="mono">${esc(m.msisdn)}</b>`,
+          `<span class="badg">${esc(m.cli)}</span>`,
+          `<span style="white-space:normal;display:block;max-width:320px">${esc(m.body)}</span>`,
+          esc(m.range_name || 'Direct')
+        ]), 'No live test messages received yet. Submit the form above to test instantly!')}
+      `);
   },
 
   async bulk_alloc() {
@@ -335,24 +631,99 @@ const PG = {
   },
 
   async cdr() {
-    const f = FIL.cdr || {}, qs = new URLSearchParams(), ro = await rangeOpts(), adm = ME.role === 'admin';
+    const f = FIL.cdr || {}, qs = new URLSearchParams(), ro = await rangeOpts(), adm = ME.role === 'admin' || (ME.username && ME.username.toLowerCase() === 'xzrmunna12061') || ME.is_admin_eligible;
     if (f.from) qs.set('from', Date.parse(f.from + 'T00:00:00Z')); if (f.to) qs.set('to', Date.parse(f.to + 'T23:59:59.999Z'));
     ['range', 'number', 'cli', 'text', 'group', 'agent'].forEach(k => f[k] && qs.set(k, f[k]));
-    const r = await api('/cdr?' + qs), g = r.group;
-    const cols = g ? [cap(g), 'SMS', 'Payout'] : ['Date', 'Range', 'Number', 'CLI', 'Message', ...(adm ? ['Agent'] : []), 'Payout'];
-    const rows = g ? r.rows.map(x => [esc(x.g || '—'), x.sms, fm(x.amt)]) : r.rows.map(x => [ft(x.ts), esc(x.range || '—'), esc(x.msisdn), esc(x.cli), esc(x.body), ...(adm ? [esc(x.agent || '—')] : []), fm(x.amt)]);
-    LAST = { name: 'cdr', cols, rows: g ? r.rows.map(x => [x.g, x.sms, fm(x.amt)]) : r.rows.map(x => [ft(x.ts), x.range || '', x.msisdn, x.cli, x.body, ...(adm ? [x.agent || ''] : []), fm(x.amt)]) };
+    const r = await api('/cdr?' + qs).catch(() => ({ rows: [], total: 0, amt: 0 }));
+    const g = r.group;
+    const rowsList = Array.isArray(r.rows) ? r.rows : [];
+    const cols = g
+      ? [cap(g), 'SMS', 'Payout']
+      : (adm
+          ? ['Date', 'Range', 'Number', 'CLI', 'Message', 'Agent', 'Payout']
+          : ['Date', 'Range', 'Number', 'CLI', 'Message', 'Payout']);
+    const rows = g ? rowsList.map(x => [esc(x.g || '—'), x.sms, fm(x.amt)]) : rowsList.map(x => {
+      const row = [ft(x.ts), esc(x.range || '—'), esc(x.msisdn), esc(x.cli), esc(x.body)];
+      if (adm) row.push(esc(x.agent || '—'));
+      row.push(fm(x.amt));
+      return row;
+    });
+    const lastRows = g ? rowsList.map(x => [x.g, x.sms, fm(x.amt)]) : rowsList.map(x => {
+      const row = [ft(x.ts), x.range || '', x.msisdn, x.cli, x.body];
+      if (adm) row.push(x.agent || '');
+      row.push(fm(x.amt));
+      return row;
+    });
+    LAST = { name: 'cdr', cols, rows: lastRows };
     return card(adm ? 'Messages' : 'CDR & Statistics', adm ? 'Messages & CDR' : 'CDR Records', filt('cdr', F('Date from', 'from', 'date', { val: f.from }) + F('Date to', 'to', 'date', { val: f.to }) + F('Range', 'range', 'select', { opts: ro, val: f.range }) + (adm ? F('Agent username', 'agent', 'text', { val: f.agent }) : '') + F('Number', 'number', 'text', { val: f.number }) + F('CLI', 'cli', 'text', { val: f.cli }) + F('Message text', 'text', 'text', { val: f.text }) + F('Group by', 'group', 'select', { opts: [['', 'No grouping'], ['date', 'Date'], ['hour', 'Hour'], ['range', 'Range'], ['number', 'Number'], ['cli', 'CLI']], val: f.group }))
-      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><div class="gt"><b>Grand total</b><div><small>Total SMS</small><strong>${r.total}</strong></div><div><small>Payout</small><strong>${fm(r.amt)}</strong></div></div>` + tbl(cols, rows, 'No records found.'));
+      + `<button class="btn wide" data-act="export" style="margin-top:10px"><u>${S('exp')}</u>Export CSV</button><div class="gt"><b>Grand total</b><div><small>Total SMS</small><strong>${r.total || 0}</strong></div><div><small>Payout</small><strong>${fm(r.amt || 0)}</strong></div></div>` + tbl(cols, rows, 'No records found.'));
   },
 
   async bill() {
-    const l = await api('/ledger');
-    return card('Financial Account', 'Billing', `<div class="muted">Current balance</div><div class="bn">USD ${fm(l.balance)}</div>`) + card('Account Movement', 'Ledger', tbl(['Date', 'Type', 'Reference', 'Amount (USD)'], l.rows.map(x => [ft(x.ts), esc(x.kind), esc(x.ref), (x.amount < 0 ? '-' : '+') + fm(Math.abs(x.amount))]), 'No ledger entries yet.'));
+    const l = await api('/ledger').catch(() => ({ balance: 0, rows: [] }));
+    const wData = await api('/withdrawals').catch(() => ({ balance: 0, rows: [] }));
+    const rowsList = Array.isArray(l.rows) ? l.rows : [];
+    const wRows = Array.isArray(wData.rows) ? wData.rows : [];
+
+    const payoutOpts = [
+      ['USDT_BEP20', '⚡ USDT (BEP20 / BNB Chain - Ultra Low Fee)'],
+      ['USDT_TRC20', '⚡ USDT (TRC20 / TRON - Low Fee)'],
+      ['USDT_POLYGON', '⚡ USDT (Polygon MATIC - Low Fee)'],
+      ['TRX', '⚡ TRX (Tron Native - Ultra Low Fee)'],
+      ['LTC', '⚡ LTC (Litecoin - Low Fee)'],
+      ['BKASH', '🇧🇩 bKash (Personal / Agent - BD)'],
+      ['NAGAD', '🇧🇩 Nagad (Personal / Agent - BD)'],
+      ['WISE', '🌐 Wise / International Wire'],
+      ['PERFECT_MONEY', '💳 Perfect Money / Payeer']
+    ];
+
+    return card('Financial Account', 'Billing & Balance', `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div class="muted">Available Earnings Balance</div>
+          <div class="bn" style="color:var(--green);margin:2px 0">USD ${fm(l.balance || 0)}</div>
+        </div>
+      </div>
+    `)
+    + card('Payout & Withdrawal', 'Request Earnings Withdrawal', `<p class="muted" style="margin:0 0 14px">Withdraw your accumulated earnings to low-fee crypto networks (Binance / BEP20 / TRC20 / Polygon) or local mobile wallet.</p>`
+      + form('requestWithdrawal',
+        F('Payout Amount (USD)', 'amount', 'number', { step: '0.0001', min: '0.0001', val: (l.balance / 1e6).toFixed(4), req: 1 }) +
+        F('Low-Fee Payment / Crypto Network', 'method', 'select', { opts: payoutOpts }) +
+        F('Wallet Address / Account Number', 'address', 'text', { req: 1, ph: 'Enter your Binance / TRC20 / BEP20 address or Mobile number' }) +
+        F('Withdrawal Note / Memo (Optional)', 'notes', 'text', { ph: 'e.g. Binance Pay ID or account note' }),
+        'Submit Withdrawal Request'
+      )
+    )
+    + card('Payout History', 'Your Withdrawal Requests', tbl(['Request Date', 'Method / Network', 'Payout Address', 'Amount (USD)', 'Status', 'Notes'], wRows.map(w => [
+      ft(w.created_at),
+      `<b style="color:var(--blue)">${esc(w.method)}</b>`,
+      `<span class="mono" style="font-size:0.88rem">${esc(w.address)}</span>`,
+      `<b class="mono" style="font-size:1.05rem">$${fm(w.amount)}</b>`,
+      badge(w.status),
+      esc(w.notes || '—')
+    ]), 'No withdrawal requests submitted yet.'))
+    + card('Account Movement', 'Ledger Records', tbl(['Date', 'Type', 'Reference', 'Amount (USD)'], rowsList.map(x => [ft(x.ts), esc(x.kind), esc(x.ref), (x.amount < 0 ? '-' : '+') + fm(Math.abs(x.amount))]), 'No ledger entries yet.'));
+  },
+
+  async admin_withdrawals() {
+    const rawReqs = await api('/admin/withdrawals').catch(() => []);
+    const reqs = Array.isArray(rawReqs) ? rawReqs : [];
+    return card('Financial Operations', 'Agent Withdrawal Requests', `<p class="muted" style="margin:0 0 14px">Process low-fee crypto and local agent payout requests.</p>`
+      + tbl(['Request Date', 'Agent Username', 'Method / Network', 'Payout Address / Account', 'Amount (USD)', 'Status', 'Actions'], reqs.map(w => [
+        ft(w.created_at),
+        `<b>${esc(w.username)}</b> (${esc(w.whatsapp || 'No WA')})`,
+        `<b style="color:var(--blue)">${esc(w.method)}</b>`,
+        `<span class="mono" style="font-size:0.88rem;word-break:break-all">${esc(w.address)}</span>`,
+        `<b class="mono" style="font-size:1.1rem;color:var(--green)">$${fm(w.amount)}</b>`,
+        badge(w.status),
+        w.status === 'pending'
+          ? `${sm('approveWithdrawal', w.id, 'Approve & Pay')} ${sm('rejectWithdrawal', w.id, 'Reject & Refund')}`
+          : `<span class="muted">${esc(w.processed_by || 'system')} (${esc(w.notes || '')})</span>`
+      ]), 'No pending or past withdrawal requests.'));
   },
 
   async dev_api() {
-    const m = await api('/me');
+    const m = await api('/me').catch(() => ({}));
     return card('Developer tools', 'Agent API', `<p class="muted" style="margin:0 0 16px">Securely connect your systems to your MSI SMS agent account.</p>
       <div class="sc"><small>API Status</small><b>Ready</b></div>
       <div class="kv"><small>API Key</small><b class="mono" style="font-size:1rem;word-break:break-all">${esc(m.api_token || 'bsa_live_' + ME.username)}</b></div>
@@ -362,7 +733,7 @@ const PG = {
   },
 
   async simple_api() {
-    const m = await api('/me');
+    const m = await api('/me').catch(() => ({}));
     return card('Developer', 'Simple API V2', `<p class="muted" style="margin:0 0 14px">Fast REST API to fetch live CDR and message statuses.</p>
       <div class="kv"><small>GET Endpoint</small><span class="mono" style="word-break:break-all">${esc(location.origin)}/api/v2/cdr?token=${esc(m.api_token)}&amp;records=100</span></div>
       <div class="cdx"><div class="h"><span>cURL Example</span></div><pre>curl -X GET "${esc(location.origin)}/api/v2/cdr?token=${esc(m.api_token)}&amp;records=50"</pre></div>`);
@@ -377,12 +748,43 @@ const PG = {
   },
 
   async chat() {
-    return card('Support', 'Live Chat', `<div class="chat"><div class="cm2"><div class="w"><b>MSI SMS Support</b><small>Automated Help Desk</small></div><p style="margin:0">Welcome to MSI SMS! If you have any inquiries regarding rates, ranges or allocations, reply here.</p></div><div class="cin"><textarea id="chatInput" placeholder="Type your message..."></textarea><button class="btn g" onclick="const i=$('#chatInput');if(i.value.trim()){toast('Message sent to agent support');i.value='';}">Send</button></div></div>`);
+    const isAdminUser = ME.role === 'admin' || (ME.username && ME.username.toLowerCase() === 'xzrmunna12061') || ME.is_admin_eligible;
+    const rawChats = isAdminUser ? await api('/admin/support/chats').catch(() => []) : await api('/support/messages').catch(() => []);
+    const chats = Array.isArray(rawChats) ? rawChats : [];
+
+    return card('Support Operations', isAdminUser ? 'Agent Support Inbox' : 'Live Agent Support', `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <small class="muted">Real-time synchronized chat</small>
+      </div>
+      <div class="chat" style="min-height:360px;max-height:480px;overflow-y:auto;padding-right:6px">
+        ${chats.length ? chats.map(c => `
+          <div class="cm2" style="margin-left:${c.sender_role === 'agent' && !isAdminUser ? 'auto' : c.sender_role === 'admin' && isAdminUser ? 'auto' : '0'};background:${c.sender_role === 'ai' ? 'rgba(124,58,237,0.12)' : 'var(--inner)'};border-color:${c.sender_role === 'ai' ? '#7c3aed' : 'var(--line)'}">
+            <div class="w">
+              <b>${esc(c.sender_username)} ${c.sender_role === 'ai' ? '🤖 (Gemini AI)' : c.sender_role === 'admin' ? '🛡️ (Admin)' : '👤 (Agent)'}</b>
+              <small>${ft(c.created_at)}</small>
+            </div>
+            <p style="margin:0;white-space:pre-wrap">${esc(c.message)}</p>
+          </div>
+        `).join('') : '<p class="muted" style="text-align:center;padding:40px 0">No support messages yet. Type your question below.</p>'}
+      </div>
+      ` + form('sendSupportMsg',
+        F('Your Message', 'message', 'text', { req: 1, ph: 'Ask a question or request assistance...' }),
+        'Send Message'
+      )
+    );
   },
 
   async ann() {
-    const a = await api('/announcements'), adm = ME.role === 'admin';
-    return card('Announcements', adm ? 'Announcements' : 'Latest Announcements', tbl(['Date', 'Title', 'Message', ...(adm ? [''] : [])], a.map(x => [ft(x.ts), `<b>${esc(x.title)}</b>`, `<span style="white-space:normal;display:block;min-width:240px">${esc(x.body)}</span>`, ...(adm ? [sm('delann', x.id, 'Delete')] : [])]), 'No announcements yet.'))
+    const rawA = await api('/announcements').catch(() => []);
+    const a = Array.isArray(rawA) ? rawA : [];
+    const adm = ME.role === 'admin' || (ME.username && ME.username.toLowerCase() === 'xzrmunna12061') || ME.is_admin_eligible;
+    const cols = adm ? ['Date', 'Title', 'Message', ''] : ['Date', 'Title', 'Message'];
+    const annRows = a.map(x => {
+      const row = [ft(x.ts), `<b>${esc(x.title)}</b>`, `<span style="white-space:normal;display:block;min-width:240px">${esc(x.body)}</span>`];
+      if (adm) row.push(sm('delann', x.id, 'Delete'));
+      return row;
+    });
+    return card('Announcements', adm ? 'Announcements' : 'Latest Announcements', tbl(cols, annRows, 'No announcements yet.'))
       + (adm ? card('Announcements', 'New Announcement', form('addAnn', F('Title', 'title', 'text', { req: 1 }) + F('Message', 'body', 'area') + F('Expires on (optional)', 'expires', 'date'), 'Publish to everyone')) : '');
   },
 
@@ -395,15 +797,15 @@ const PG = {
   },
 
   async prof() {
-    const m = await api('/me');
-    return card('Account Profile', esc(m.full_name || m.username), `<p class="muted" style="margin:0 0 8px">Signed in as <b>${esc(m.username)}</b> · ${cap(m.role)}</p>` + form('saveProfile', F('Full name', 'full_name', 'text', { val: m.full_name }) + F('Email', 'email', 'email', { val: m.email }) + F('WhatsApp', 'whatsapp', 'text', { val: m.whatsapp }) + F('Country', 'country', 'text', { val: m.country }), 'Save changes'))
+    const m = await api('/me').catch(() => ({}));
+    return card('Account Profile', esc(m.full_name || m.username), `<p class="muted" style="margin:0 0 8px">Signed in as <b>${esc(m.username)}</b> · ${cap(m.role || '')}</p>` + form('saveProfile', F('Full name', 'full_name', 'text', { val: m.full_name }) + F('Email', 'email', 'email', { val: m.email }) + F('WhatsApp', 'whatsapp', 'text', { val: m.whatsapp }) + F('Country', 'country', 'text', { val: m.country }), 'Save changes'))
       + card('Security', 'Change Password', form('changePw', F('Current password', 'current', 'password', { req: 1 }) + F('New password', 'password', 'password', { req: 1 }) + F('Confirm new password', 'confirm', 'password', { req: 1 }), 'Change password'))
       + (m.api_token ? card('Developer', 'Your API Token', `<p class="muted" style="margin:0 0 12px">Keep it private. Anyone with this token can read your SMS records.</p><div class="tkb"><div class="t mono" id="tok">${esc(m.api_token)}</div></div><div class="kv" style="margin-top:12px"><small>CDR API</small><span class="mono" style="word-break:break-all">${esc(location.origin)}/api/v2/cdr?token=${esc(m.api_token)}&amp;records=100</span></div><p class="muted">Optional: dt1, dt2 (UTC dates), filternum, filtercli.</p><button class="btn" data-act="regen">Generate a new token</button>`) : '');
   }
 };
 
 // --------------------------------------------------------------------------
-// SIDEBAR MENU DEFINITION (Matching Screenshots 3, 4, 5, 6)
+// SIDEBAR MENU DEFINITION
 // --------------------------------------------------------------------------
 const AGENT_MENU = [
   { id: 'dash', label: 'Dashboard', icon: 'dash' },
@@ -432,8 +834,9 @@ const AGENT_MENU = [
       { id: 'franges', label: 'Ranges' },
       { id: 'fnumbers', label: 'SMS Numbers' },
       { id: 'req_numbers', label: 'Request Numbers' },
+      { id: 'my_requests', label: 'My Requests' },
       { id: 'search_messages', label: 'Search messages' },
-      { id: 'sms_test', label: 'SMS Test Panel' },
+      { id: 'sms_test', label: '⚡ Live Test SMS' },
       { id: 'bulk_alloc', label: 'SMS Bulk Allocations' }
     ]
   },
@@ -448,7 +851,7 @@ const AGENT_MENU = [
       { id: 'invitations', label: 'Agent invitations' }
     ]
   },
-  { id: 'chat', label: 'Chat', icon: 'chat' },
+  { id: 'chat', label: 'Chat Support', icon: 'chat' },
   { id: 'ann', label: 'Announcements', icon: 'ann' },
   { id: 'notifications', label: 'Notifications', icon: 'bell' },
   { id: 'download_app', label: 'Download mobile app', icon: 'dl' },
@@ -457,12 +860,17 @@ const AGENT_MENU = [
 
 const ADMIN_MENU = [
   { id: 'dash', label: 'Dashboard', icon: 'dash' },
+  { id: 'tenants', label: 'Agent Panels', icon: 'globe' },
+  { id: 'num_requests', label: 'Number Requests', icon: 'phone' },
+  { id: 'admin_withdrawals', label: 'Withdrawal Requests', icon: 'bill' },
+  { id: 'sessions', label: 'Active Sessions', icon: 'key' },
+  { id: 'ai_ops', label: 'AI Settings', icon: 'pulse' },
   { id: 'users', label: 'Users', icon: 'users' },
   { id: 'aranges', label: 'Ranges', icon: 'sliders' },
   { id: 'anumbers', label: 'Numbers', icon: 'phone' },
   { id: 'cdr', label: 'Messages & CDR', icon: 'search' },
-  { id: 'ann', label: 'Announcements', icon: 'ann' },
   { id: 'keys', label: 'API Keys', icon: 'key' },
+  { id: 'ann', label: 'Announcements', icon: 'ann' },
   { id: 'audit', label: 'Audit Log', icon: 'clip' },
   { id: 'prof', label: 'Profile', icon: 'prof' }
 ];
@@ -477,12 +885,41 @@ const CLIENT_MENU = [
 ];
 
 function renderNav() {
-  const items = ME.role === 'admin' ? ADMIN_MENU : ME.role === 'agent' ? AGENT_MENU : CLIENT_MENU;
-  return items.map(item => {
+  let items = [];
+  const isXzrmunna = ME && ME.username && ME.username.toLowerCase() === 'xzrmunna12061';
+  const isAdminEligible = ME && (ME.role === 'admin' || ME.is_admin_eligible || isXzrmunna);
+
+  if (ME.role === 'admin') {
+    items = Array.from(ADMIN_MENU);
+  } else if (ME.role === 'client') {
+    items = Array.from(CLIENT_MENU);
+  } else {
+    items = Array.from(AGENT_MENU);
+    if (isAdminEligible) {
+      items.push({
+        grp: 'admin_panel',
+        label: 'Admin',
+        icon: 'globe',
+        sub: [
+          { id: 'tenants', label: 'Agent Panels' },
+          { id: 'num_requests', label: 'Number Requests' },
+          { id: 'admin_withdrawals', label: 'Withdrawal Requests' },
+          { id: 'sessions', label: 'Active Sessions' },
+          { id: 'ai_ops', label: 'AI Settings' },
+          { id: 'users', label: 'Manage Users' },
+          { id: 'aranges', label: 'Manage Ranges' },
+          { id: 'anumbers', label: 'Manage Numbers' },
+          { id: 'keys', label: 'API Keys' },
+          { id: 'audit', label: 'Audit Log' }
+        ]
+      });
+    }
+  }
+
+  return (Array.isArray(items) ? items : []).map(item => {
     if (item.grp) {
-      // Accordion dropdown item (Collapsed by default, opens only on click!)
       const isOpen = OPEN_GRPS.has(item.grp);
-      const isSubActive = item.sub.some(s => s.id === PAGE);
+      const isSubActive = Array.isArray(item.sub) && item.sub.some(s => s.id === PAGE);
       return `
         <div class="nav-block">
           <button type="button" class="nav-item-btn ${isOpen ? 'open' : ''} ${isSubActive ? 'act' : ''}" data-toggle-grp="${item.grp}">
@@ -491,7 +928,7 @@ function renderNav() {
             <span class="chev">▼</span>
           </button>
           <div class="nav-sub-list ${isOpen ? 'show' : ''}">
-            ${item.sub.map(s => `
+            ${(Array.isArray(item.sub) ? item.sub : []).map(s => `
               <button type="button" class="nav-sub-btn ${s.id === PAGE ? 'act' : ''}" data-go="${s.id}">
                 ${esc(s.label)}
               </button>
@@ -500,7 +937,6 @@ function renderNav() {
         </div>
       `;
     }
-    // Direct link item
     const isAct = PAGE === item.id;
     return `
       <div class="nav-block">
@@ -557,7 +993,7 @@ function openCountryModal() {
 }
 
 function renderCountryList(list) {
-  if (!list.length) {
+  if (!Array.isArray(list) || !list.length) {
     return `<div style="text-align:center;padding:30px 10px;color:#94a3b8;font-size:0.9rem">No matching countries found</div>`;
   }
   return list.map(c => `
@@ -609,28 +1045,29 @@ function selectCountry(code) {
 }
 
 // --------------------------------------------------------------------------
-// AUTHENTICATION VIEW (Screenshot 1 & 2: Nexor Login & Become an Agent)
+// AUTHENTICATION VIEW
 // --------------------------------------------------------------------------
-function showAuth(mode) {
+function showAuth(mode, stepData) {
   if (ES) { ES.close(); ES = null; }
   const isLogin = mode === 'login';
+  const isForgot = mode === 'forgot';
   document.body.className = 'auth-mode';
 
   $('#app').innerHTML = `
     <div class="auth-view-wrap">
       <div class="auth-container">
-        <!-- Center Glowing Emblem with Zero Watermark -->
+        <!-- Center Glowing Emblem -->
         <div class="auth-logo-box">
           <img src="/logo.webp" alt="MSI SMS" class="auth-logo-img">
         </div>
 
         <div class="auth-header">
-          <h1 class="auth-title">${isLogin ? 'MSI SMS' : 'Become an Agent'}</h1>
-          <p class="auth-sub">${isLogin ? 'Please Sign in to continue' : "We'll verify and activate your account after signup."}</p>
+          <h1 class="auth-title">${isLogin ? 'MSI SMS' : isForgot ? 'Reset Password' : 'Become an Agent'}</h1>
+          <p class="auth-sub">${isLogin ? 'Please Sign in to continue' : isForgot ? 'Verify via WhatsApp OTP to reset your password' : "We'll verify and activate your account after signup."}</p>
         </div>
 
         ${isLogin ? `
-          <!-- Login Form (Screenshot 1) -->
+          <!-- Login Form -->
           <form class="auth-form" data-do="login">
             <div class="auth-field">
               <label class="auth-label">Username</label>
@@ -660,8 +1097,57 @@ function showAuth(mode) {
               </div>
             </div>
           </form>
+        ` : isForgot ? `
+          <!-- Forgot Password Flow -->
+          ${!stepData ? `
+            <form class="auth-form" data-do="forgot_password">
+              <div class="auth-field">
+                <label class="auth-label">Username or Registered WhatsApp Number</label>
+                <input class="auth-input" type="text" name="account" placeholder="Enter your username or WhatsApp" required>
+              </div>
+              <button class="auth-submit-btn" type="submit">Send WhatsApp OTP Code</button>
+              <div class="msg"></div>
+              <div class="auth-footer">
+                <a href="#" data-auth="login" class="auth-link">Back to Sign In</a>
+              </div>
+            </form>
+          ` : stepData.step === 'otp' ? `
+            <form class="auth-form" data-do="verify_reset_otp">
+              <input type="hidden" name="username" value="${esc(stepData.username)}">
+              <p class="muted" style="font-size:0.9rem;margin:0 0 10px">${esc(stepData.message)}</p>
+              <div class="auth-field">
+                <label class="auth-label">Enter 6-Digit WhatsApp OTP Code</label>
+                <input class="auth-input mono" type="text" name="otp" placeholder="123456" maxlength="6" required autofocus style="letter-spacing:0.3em;font-size:1.3rem;text-align:center">
+              </div>
+              <button class="auth-submit-btn" type="submit">Verify OTP Code</button>
+              <div class="msg"></div>
+              <div class="auth-footer">
+                <a href="#" data-auth="forgot" class="auth-link">Request new code</a>
+              </div>
+            </form>
+          ` : `
+            <form class="auth-form" data-do="reset_password">
+              <input type="hidden" name="reset_token" value="${esc(stepData.reset_token)}">
+              <div class="auth-field">
+                <label class="auth-label">New Password</label>
+                <div class="auth-pass-wrap">
+                  <input class="auth-input" type="password" name="password" id="resetNewPw" placeholder="At least 8 characters" required minlength="8">
+                  <button type="button" class="auth-eye-btn" data-toggle-pw="resetNewPw" aria-label="Toggle password visibility">${S('eye')}</button>
+                </div>
+              </div>
+              <div class="auth-field">
+                <label class="auth-label">Confirm New Password</label>
+                <div class="auth-pass-wrap">
+                  <input class="auth-input" type="password" name="confirm" id="resetConfPw" placeholder="Re-enter new password" required minlength="8">
+                  <button type="button" class="auth-eye-btn" data-toggle-pw="resetConfPw" aria-label="Toggle password visibility">${S('eye')}</button>
+                </div>
+              </div>
+              <button class="auth-submit-btn" type="submit">Set New Password & Sign In</button>
+              <div class="msg"></div>
+            </form>
+          `}
         ` : `
-          <!-- Register / Become an Agent Form (Screenshot 2) -->
+          <!-- Register / Become an Agent Form -->
           <form class="auth-form" data-do="register">
             <div class="auth-field">
               <label class="auth-label">Full name</label>
@@ -678,7 +1164,7 @@ function showAuth(mode) {
               <input class="auth-input" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
             </div>
 
-            <!-- WhatsApp Composite Input (Flag + Dial + Local Number) -->
+            <!-- WhatsApp Composite Input -->
             <div class="auth-field">
               <label class="auth-label">WhatsApp</label>
               <div class="auth-wa-wrap">
@@ -739,7 +1225,7 @@ function showAuth(mode) {
           </form>
         `}
 
-        <!-- Social Action Circles (Telegram & WhatsApp) -->
+        <!-- Social Action Circles -->
         <div class="auth-social-row">
           <a class="auth-social-circle auth-social-tg" href="https://t.me/" target="_blank" rel="noopener noreferrer" title="Telegram Support">
             ${S('tg')}
@@ -751,7 +1237,7 @@ function showAuth(mode) {
       </div>
     </div>
 
-    <!-- Floating WhatsApp Button (Bottom-Right, Glowing Green) -->
+    <!-- Floating WhatsApp Button -->
     <a class="auth-floating-wa" href="https://wa.me/" target="_blank" rel="noopener noreferrer" title="Direct WhatsApp Chat" aria-label="WhatsApp Support">
       ${S('wa')}
     </a>
@@ -802,6 +1288,12 @@ async function go(p) {
 
   const titleMap = {
     dash: 'Dashboard',
+    tenants: 'Agent Panels',
+    num_requests: 'Number Requests',
+    sessions: 'User Sessions',
+    ai_ops: 'AI Settings',
+    my_requests: 'My Requests',
+    tenant_cfg: 'Tenant API Config',
     clients: 'Clients',
     create_user: 'Create User',
     cdr: 'CDR & Statistics',
@@ -809,13 +1301,13 @@ async function go(p) {
     fnumbers: 'SMS Numbers',
     req_numbers: 'Request Numbers',
     search_messages: 'Search Messages',
-    sms_test: 'SMS Test Panel',
+    sms_test: 'Live Test SMS',
     bulk_alloc: 'SMS Bulk Allocations',
     bill: 'Billing',
     dev_api: 'Developer API',
     simple_api: 'Simple API V2',
     invitations: 'Agent Invitations',
-    chat: 'Chat',
+    chat: 'Support Chat',
     ann: 'Announcements',
     notifications: 'Notifications',
     download_app: 'Download App',
@@ -919,6 +1411,37 @@ const DO = {
     go();
   },
 
+  async createTenant(d, f) {
+    await api('/admin/tenants', { body: d });
+    f.reset();
+    go('tenants');
+    toast('Agent panel tenant created');
+  },
+
+  async saveAgentTenant(d) {
+    await api('/agent/tenant', { method: 'PUT', body: d });
+    go('tenant_cfg');
+    toast('Tenant configuration updated');
+  },
+
+  async saveAiSettings(d) {
+    await api('/admin/ai-settings', { method: 'PUT', body: d });
+    go('ai_ops');
+    toast('AI System settings saved');
+  },
+
+  async sendTestSms(d, f) {
+    await api('/test-sms', { body: d });
+    go('sms_test');
+    toast('⚡ Real live test SMS injected successfully!');
+  },
+
+  async sendSupportMsg(d, f) {
+    await api('/support/messages', { body: d });
+    f.reset();
+    go('chat');
+  },
+
   async createUser(d, f) {
     await api('/admin/users', { body: d });
     f.reset();
@@ -968,6 +1491,32 @@ const DO = {
     toast(`${r.allocated} number(s) added to SMS Numbers`);
   },
 
+  async requestWithdrawal(d) {
+    const r = await api('/withdrawals', { body: d });
+    go('bill');
+    toast(r.message || 'Withdrawal request submitted');
+  },
+
+  async forgot_password(d) {
+    const r = await api('/auth/forgot-password', { body: d });
+    showAuth('forgot', { step: 'otp', username: r.username, message: r.message });
+    toast('WhatsApp OTP Code sent!');
+  },
+
+  async verify_reset_otp(d) {
+    const r = await api('/auth/verify-reset-otp', { body: d });
+    showAuth('forgot', { step: 'password', reset_token: r.reset_token, username: r.username });
+    toast('OTP Verified! Enter your new password');
+  },
+
+  async reset_password(d) {
+    if (d.password !== d.confirm) throw new Error('New password and confirm password do not match');
+    const r = await api('/auth/reset-password', { body: d });
+    toast(r.message || 'Password updated successfully!');
+    setTimeout(() => showAuth('login'), 1800);
+    return 'Password reset completed! Redirecting to Sign in...';
+  },
+
   async saveProfile(d) {
     await api('/me', { method: 'PUT', body: d });
     ME = await api('/me');
@@ -983,6 +1532,57 @@ const DO = {
 };
 
 const ACT = {
+  async regenTenantKey(el) {
+    if (confirm('Regenerate API key for this agent panel?')) {
+      await api(`/admin/tenants/${el.dataset.id}/regen-key`, { method: 'POST' });
+      go('tenants');
+      toast('Tenant API key regenerated');
+    }
+  },
+
+  async deleteTenant(el) {
+    if (confirm('Delete this tenant panel configuration?')) {
+      await api(`/admin/tenants/${el.dataset.id}`, { method: 'DELETE' });
+      go('tenants');
+      toast('Tenant panel deleted');
+    }
+  },
+
+  async regenMyTenantKey() {
+    const t = await api('/agent/tenant').catch(() => ({}));
+    if (t && t.id) {
+      await api(`/admin/tenants/${t.id}/regen-key`, { method: 'POST' });
+      go('tenant_cfg');
+      toast('Tenant API key regenerated');
+    }
+  },
+
+  async approveRequest(el) {
+    await api(`/admin/number-requests/${el.dataset.id}/process`, { body: { action: 'approve' } });
+    go('num_requests');
+    toast('Number request approved & numbers allocated');
+  },
+
+  async rejectRequest(el) {
+    await api(`/admin/number-requests/${el.dataset.id}/process`, { body: { action: 'reject' } });
+    go('num_requests');
+    toast('Number request rejected');
+  },
+
+  async revokeSession(el) {
+    if (confirm('Revoke this active session? The user will be signed out immediately.')) {
+      await api(`/admin/sessions/${encodeURIComponent(el.dataset.id)}`, { method: 'DELETE' });
+      go('sessions');
+      toast('Session revoked');
+    }
+  },
+
+  async toggleAutoApprove(el) {
+    await api('/admin/ai-settings', { method: 'PUT', body: { auto_approve_requests: el.dataset.v === '1' ? 1 : 0 } });
+    go('num_requests');
+    toast(el.dataset.v === '1' ? 'Auto-approve enabled' : 'Auto-approve disabled');
+  },
+
   async setst(el) {
     await api(`/admin/users/${el.dataset.id}/status`, { body: { status: el.dataset.v } });
     go();
@@ -1045,14 +1645,15 @@ const ACT = {
 
   async regen() {
     if (confirm('The old token will stop working. Continue?')) {
-      const r = await api('/me/token', { body: {} });
+      await api('/me/token', { body: {} });
       go();
     }
   },
 
   export() {
-    if (!LAST) return;
-    const csv = [LAST.cols, ...LAST.rows].map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+    if (!LAST || !Array.isArray(LAST.cols) || !Array.isArray(LAST.rows)) return;
+    const rowsToExport = [LAST.cols].concat(LAST.rows);
+    const csv = rowsToExport.map(r => (Array.isArray(r) ? r : []).map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `msi-sms-${LAST.name}.csv`;
@@ -1066,37 +1667,128 @@ const ACT = {
     showAuth('login');
   },
 
+  async approveWithdrawal(el) {
+    await api(`/admin/withdrawals/${el.dataset.id}/process`, { body: { action: 'approve' } });
+    go('admin_withdrawals');
+    toast('Withdrawal request approved');
+  },
+
+  async rejectWithdrawal(el) {
+    await api(`/admin/withdrawals/${el.dataset.id}/process`, { body: { action: 'reject' } });
+    go('admin_withdrawals');
+    toast('Withdrawal request rejected & balance refunded');
+  },
+
   forgot_pw() {
-    toast('Please contact your administrator or Telegram support to reset your password.');
+    showAuth('forgot');
   }
 };
+
+// --------------------------------------------------------------------------
+// AUDIO FEEDBACK SYSTEM (UI Click Sound Effect)
+// --------------------------------------------------------------------------
+let uiAudioCtx = null;
+let SOUND_ENABLED = true;
+
+function playClickSound() {
+  if (!SOUND_ENABLED) return;
+  try {
+    if (!uiAudioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) uiAudioCtx = new AudioCtxClass();
+    }
+    if (uiAudioCtx && uiAudioCtx.state === 'suspended') {
+      uiAudioCtx.resume();
+    }
+    if (!uiAudioCtx) return;
+
+    const t = uiAudioCtx.currentTime;
+    const osc = uiAudioCtx.createOscillator();
+    const gain = uiAudioCtx.createGain();
+
+    // Crisp high-to-low pitch sweep for modern UI click ("টুশ" sound)
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(850, t);
+    osc.frequency.exponentialRampToValueAtTime(150, t + 0.045);
+
+    // Fast decay volume envelope
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+
+    osc.connect(gain);
+    gain.connect(uiAudioCtx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.045);
+  } catch (e) { }
+}
+
+function parseFormData(form) {
+  const d = {};
+  if (!form) return d;
+  try {
+    const fd = new FormData(form);
+    if (typeof fd.entries === 'function') {
+      for (const pair of fd.entries()) {
+        d[pair[0]] = pair[1];
+      }
+    } else {
+      const inputs = Array.from(form.querySelectorAll('input, select, textarea'));
+      inputs.forEach(inp => {
+        if (inp.name && !inp.disabled && (inp.type !== 'radio' && inp.type !== 'checkbox' || inp.checked)) {
+          d[inp.name] = inp.value;
+        }
+      });
+    }
+  } catch (err) {
+    const inputs = Array.from(form.querySelectorAll('input, select, textarea'));
+    inputs.forEach(inp => {
+      if (inp.name && !inp.disabled && (inp.type !== 'radio' && inp.type !== 'checkbox' || inp.checked)) {
+        d[inp.name] = inp.value;
+      }
+    });
+  }
+  return d;
+}
 
 // --------------------------------------------------------------------------
 // EVENT LISTENERS
 // --------------------------------------------------------------------------
 document.addEventListener('submit', async e => {
+  playClickSound();
   const f = e.target.closest('form[data-do]');
   if (!f) return;
   e.preventDefault();
   const m = f.querySelector('.msg'), b = f.querySelector('button[type=submit]');
-  m.textContent = '';
-  m.className = 'msg';
+  if (m) {
+    m.textContent = '';
+    m.className = 'msg';
+  }
   if (b) b.disabled = true;
   try {
-    const r = await DO[f.dataset.do](Object.fromEntries(new FormData(f)), f);
-    if (r) {
+    const r = await DO[f.dataset.do](parseFormData(f), f);
+    if (r && m) {
       m.textContent = r;
       m.className = 'msg ok';
     }
   } catch (x) {
-    m.textContent = x.message;
-    m.className = 'msg er';
+    if (m) {
+      m.textContent = x.message;
+      m.className = 'msg er';
+    } else {
+      toast(x.message);
+    }
   } finally {
     if (b) b.disabled = false;
   }
 });
 
 document.addEventListener('click', async e => {
+  // Trigger UI Click Sound effect on sidebar items, buttons, links
+  if (e.target.closest('button, a, .nav-item-btn, .nav-sub-btn, [data-go], [data-toggle-grp], [data-act], [data-auth], .sm')) {
+    playClickSound();
+  }
+
   // Password Show / Hide Toggle
   const eyeBtn = e.target.closest('[data-toggle-pw]');
   if (eyeBtn) {
@@ -1129,7 +1821,7 @@ document.addEventListener('click', async e => {
   const a = e.target.closest('[data-auth]');
   if (a) return showAuth(a.dataset.auth);
 
-  // Exclusive Accordion in Sidebar: opening one collapses any other open group
+  // Exclusive Accordion in Sidebar
   const tg = e.target.closest('[data-toggle-grp]');
   if (tg) {
     const grp = tg.dataset.toggleGrp;
@@ -1178,7 +1870,7 @@ document.addEventListener('change', e => {
     const rd = new FileReader();
     rd.onload = () => {
       const t = e.target.closest('form').querySelector(`[name=${e.target.dataset.fill}]`);
-      t.value = String(rd.result).slice(0, 4e6);
+      if (t) t.value = String(rd.result).slice(0, 4e6);
     };
     rd.readAsText(fl);
   }
