@@ -147,12 +147,101 @@ const rangeOpts = async (all = true) => { const r = await api('/range-names'); r
 const PG = {
   async dash() {
     const s = await api('/stats'), mx = Math.max(1, ...s.series.map(x => x.n));
-    const kp = ME.role === 'admin'
-      ? [['Active agents', s.agents], ['Pending approvals', s.pending], ['Clients', s.clients], ['Free numbers', s.free], ['Allocated numbers', s.allocated], ['SMS today', s.sms.today], ['SMS this month', s.sms.month], ['SMS all time', s.sms.all]]
-      : [['Today SMS', s.sms.today], ['This Week SMS', s.sms.week], ['This Month SMS', s.sms.month], ['This Year SMS', s.sms.year], ['All Time SMS', s.sms.all], ['Balance (USD)', fm(s.balance)], ['My numbers', s.numbers], ...(ME.role === 'agent' ? [['Clients', s.clients]] : [])];
-    return `<section class="card hero"><div class="eyebrow">Unix SMS</div><h1>${esc(ME.full_name || ME.username)}</h1><p class="muted" style="margin:0">Live overview — real-time synchronization with server.</p>${s.pending ? `<div class="row"><button class="btn g nf" data-go="users">${s.pending} account(s) waiting for approval</button></div>` : ''}</section>`
-      + card('Overview', 'Overview', `<div class="stats">${kp.map(([l, v]) => `<div class="stat"><small>${l}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`)
-      + card('SMS Activity', 'SMS Last 7 Days', `<div class="chart">${s.series.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${x.day.slice(5)}</div>`).join('')}</div>`);
+    const liveFeed = await api('/live-test-feed').catch(() => []);
+    
+    if (ME.role === 'admin') {
+      const isAway = s.admin_availability === 'away';
+      return `<section class="card hero">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+          <div>
+            <div class="eyebrow">MSI SMS MULTI-TENANT ARCHITECTURE</div>
+            <h1 style="margin:4px 0 6px">Master Operations Dashboard</h1>
+            <p class="muted" style="margin:0">Real-time tenant synchronization · Multi-agent panels · Automated number routing</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="badg" style="background:${isAway ? 'rgba(234,179,8,0.18)' : 'rgba(52,211,153,0.18)'};color:${isAway ? '#facc15' : '#34d399'};border:1px solid ${isAway ? '#ca8a04' : '#059669'}">
+              ${isAway ? '🌙 Admin Away (AI Auto-Pilot Active)' : '🟢 Admin Online'}
+            </span>
+            <button class="btn nf sm" data-go="ai_ops" style="padding:7px 14px;font-size:0.85rem">AI Settings</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:16px;gap:8px">
+          <button class="btn g" data-go="tenants"><u>${S('globe')}</u>Manage Agent Panels (${s.tenants_count || 0})</button>
+          <button class="btn" data-go="num_requests"><u>${S('phone')}</u>Number Requests ${s.pending_requests ? `<span class="badge" style="position:static;display:inline-flex;margin-left:6px">${s.pending_requests}</span>` : ''}</button>
+          <button class="btn" data-go="sessions"><u>${S('key')}</u>User Sessions (${s.active_sessions || 1})</button>
+          <button class="btn" data-go="sms_test"><u>${S('pulse')}</u>⚡ Real-Time Live Test SMS</button>
+        </div>
+      </section>`
+      + card('Multi-Tenant Overview', 'System Metrics', `<div class="stats">
+        <div class="stat"><small>Active Agent Panels</small><strong>${esc(s.tenants_count || s.agents)}</strong></div>
+        <div class="stat"><small>Active Sessions</small><strong>${esc(s.active_sessions || 1)}</strong></div>
+        <div class="stat"><small>Number Requests Pending</small><strong style="${s.pending_requests ? 'color:#facc15' : ''}">${esc(s.pending_requests || 0)}</strong></div>
+        <div class="stat"><small>Free Numbers Stock</small><strong>${esc(s.free)}</strong></div>
+        <div class="stat"><small>Allocated Numbers</small><strong>${esc(s.allocated)}</strong></div>
+        <div class="stat"><small>Real-time SMS Today</small><strong style="color:var(--green)">${esc(s.sms.today)}</strong></div>
+        <div class="stat"><small>SMS This Month</small><strong>${esc(s.sms.month)}</strong></div>
+        <div class="stat"><small>SMS All Time</small><strong>${esc(s.sms.all)}</strong></div>
+      </div>`)
+      + card('Strictly Live Data', 'Real-Time Live Test SMS Feed', `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <p class="muted" style="margin:0">Live incoming test messages synchronized straight from SQLite ingest stream.</p>
+          <button class="btn sm" data-go="sms_test" style="padding:6px 14px;font-size:0.85rem">Send Live Test SMS</button>
+        </div>
+        ${tbl(['Date / Time', 'Target MSISDN', 'Sender CLI', 'Live Message Body', 'Range'], liveFeed.map(m => [
+          ft(m.ts),
+          `<b class="mono">${esc(m.msisdn)}</b>`,
+          `<span class="badg">${esc(m.cli)}</span>`,
+          `<span style="white-space:normal;display:block;max-width:340px">${esc(m.body)}</span>`,
+          esc(m.range_name || 'Direct')
+        ]), 'No live SMS received yet. Click "Send Live Test SMS" to generate real live stream data.' )}
+      `)
+      + card('Traffic Volume', 'SMS Activity Last 7 Days', `<div class="chart">${s.series.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${x.day.slice(5)}</div>`).join('')}</div>`);
+    }
+
+    // Agent Dashboard view
+    const isAway = s.admin_availability === 'away';
+    const kp = [
+      ['Today SMS', s.sms.today],
+      ['This Week SMS', s.sms.week],
+      ['This Month SMS', s.sms.month],
+      ['All Time SMS', s.sms.all],
+      ['Balance (USD)', fm(s.balance)],
+      ['My numbers', s.numbers],
+      ['Clients', s.clients || 0],
+      ['Tenant Panel', s.tenant ? s.tenant.name : 'MSI Agent Portal']
+    ];
+    return `<section class="card hero">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="eyebrow">${s.tenant ? esc(s.tenant.name) : 'MSI SMS AGENT PANEL'}</div>
+          <h1 style="margin:4px 0">${esc(ME.full_name || ME.username)}</h1>
+          <p class="muted" style="margin:0">Tenant ID: <span class="mono">${esc(s.tenant ? s.tenant.tenant_id : 'panel_' + ME.username)}</span> · Synchronized with Master Dashboard</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badg" style="background:${isAway ? 'rgba(234,179,8,0.18)' : 'rgba(52,211,153,0.18)'};color:${isAway ? '#facc15' : '#34d399'}">
+            ${isAway ? '🌙 Admin Away (AI Assistant Active)' : '🟢 Admin Online'}
+          </span>
+          <button class="btn sm" data-go="chat" style="padding:6px 12px;font-size:0.85rem">Live AI Support</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px;gap:8px">
+        <button class="btn g" data-go="req_numbers">Request Numbers</button>
+        <button class="btn" data-go="sms_test">⚡ Test Live SMS</button>
+        <button class="btn" data-go="fnumbers">SMS Numbers (${s.numbers})</button>
+        <button class="btn" data-go="my_requests">My Requests</button>
+      </div>
+    </section>`
+    + card('Overview', 'Overview', `<div class="stats">${kp.map(([l, v]) => `<div class="stat"><small>${l}</small><strong>${esc(v)}</strong></div>`).join('')}</div>`)
+    + card('Real-Time Live Feed', 'Recent Live SMS Activity', `
+      ${tbl(['Date / Time', 'Number', 'Sender CLI', 'Live Message Body', 'Range'], liveFeed.map(m => [
+        ft(m.ts),
+        `<b class="mono">${esc(m.msisdn)}</b>`,
+        `<span class="badg">${esc(m.cli)}</span>`,
+        `<span style="white-space:normal;display:block;max-width:320px">${esc(m.body)}</span>`,
+        esc(m.range_name || 'Standard')
+      ]), 'No incoming SMS recorded yet. Try the Live Test SMS tool above!')}
+    `)
+    + card('SMS Activity', 'SMS Last 7 Days', `<div class="chart">${s.series.map(x => `<div class="bar"><em>${x.n}</em><div style="height:${Math.max(x.n / mx * 100, 3)}%"></div>${x.day.slice(5)}</div>`).join('')}</div>`);
   },
 
   // ----- admin
@@ -237,7 +326,7 @@ const PG = {
       </div>
       <div class="kv">
         <small>Test Payload Example</small>
-        <pre class="mono" style="margin:0;font-size:0.85rem">{"number":"8801700000001","cli":"TEST_OTP","text":"Your Unix SMS code is 789012"}</pre>
+        <pre class="mono" style="margin:0;font-size:0.85rem">{"number":"8801700000001","cli":"TEST_OTP","text":"Your MSI SMS code is 789012"}</pre>
       </div>`);
   },
 
@@ -264,7 +353,7 @@ const PG = {
 
   async dev_api() {
     const m = await api('/me');
-    return card('Developer tools', 'Agent API', `<p class="muted" style="margin:0 0 16px">Securely connect your systems to your Unix SMS agent account.</p>
+    return card('Developer tools', 'Agent API', `<p class="muted" style="margin:0 0 16px">Securely connect your systems to your MSI SMS agent account.</p>
       <div class="sc"><small>API Status</small><b>Ready</b></div>
       <div class="kv"><small>API Key</small><b class="mono" style="font-size:1rem;word-break:break-all">${esc(m.api_token || 'bsa_live_' + ME.username)}</b></div>
       <div class="kv"><small>Webhook Endpoint</small><span class="mono">${esc(location.origin)}/api/v2/cdr?token=${esc(m.api_token)}</span></div>
@@ -281,14 +370,14 @@ const PG = {
 
   async invitations() {
     const refLink = `${location.origin}/portal/register?ref=${esc(ME.username)}`;
-    return card('Referral System', 'Agent Invitations', `<p class="muted" style="margin:0 0 14px">Invite new agents to Unix SMS using your unique referral link.</p>
+    return card('Referral System', 'Agent Invitations', `<p class="muted" style="margin:0 0 14px">Invite new agents to MSI SMS using your unique referral link.</p>
       <div class="kv"><small>Your Referral Link</small><b class="mono" style="font-size:0.95rem;word-break:break-all">${refLink}</b></div>
       <div class="sc"><small>Total Referred Agents</small><b>0</b></div>
       <button class="btn g" onclick="navigator.clipboard.writeText('${refLink}');toast('Referral link copied!');">Copy Invite Link</button>`);
   },
 
   async chat() {
-    return card('Support', 'Live Chat', `<div class="chat"><div class="cm2"><div class="w"><b>Unix SMS Support</b><small>Automated Help Desk</small></div><p style="margin:0">Welcome to Unix SMS! If you have any inquiries regarding rates, ranges or allocations, reply here.</p></div><div class="cin"><textarea id="chatInput" placeholder="Type your message..."></textarea><button class="btn g" onclick="const i=$('#chatInput');if(i.value.trim()){toast('Message sent to agent support');i.value='';}">Send</button></div></div>`);
+    return card('Support', 'Live Chat', `<div class="chat"><div class="cm2"><div class="w"><b>MSI SMS Support</b><small>Automated Help Desk</small></div><p style="margin:0">Welcome to MSI SMS! If you have any inquiries regarding rates, ranges or allocations, reply here.</p></div><div class="cin"><textarea id="chatInput" placeholder="Type your message..."></textarea><button class="btn g" onclick="const i=$('#chatInput');if(i.value.trim()){toast('Message sent to agent support');i.value='';}">Send</button></div></div>`);
   },
 
   async ann() {
@@ -302,7 +391,7 @@ const PG = {
   },
 
   async download_app() {
-    return card('Mobile App', 'Download Unix SMS Mobile App', `<div class="dl"><div class="a"><div class="tile">${S('mob')}</div><h2>Get Unix SMS for Android</h2><p class="muted">Track live SMS, client payouts, balance and notifications on the go.</p><button class="btn g wide" onclick="toast('Downloading Unix SMS APK...');">Download Android APK (v2.4)</button></div><div class="b"><h3>Installation steps</h3><ol><li>Click Download button</li><li>Open downloaded APK on your mobile</li><li>Enable "Install from Unknown Sources" if prompted</li><li>Sign in with your agent username and password</li></ol></div></div>`);
+    return card('Mobile App', 'Download MSI SMS Mobile App', `<div class="dl"><div class="a"><div class="tile">${S('mob')}</div><h2>Get MSI SMS for Android</h2><p class="muted">Track live SMS, client payouts, balance and notifications on the go.</p><button class="btn g wide" onclick="toast('Downloading MSI SMS APK...');">Download Android APK (v2.4)</button></div><div class="b"><h3>Installation steps</h3><ol><li>Click Download button</li><li>Open downloaded APK on your mobile</li><li>Enable "Install from Unknown Sources" if prompted</li><li>Sign in with your agent username and password</li></ol></div></div>`);
   },
 
   async prof() {
@@ -530,13 +619,13 @@ function showAuth(mode) {
   $('#app').innerHTML = `
     <div class="auth-view-wrap">
       <div class="auth-container">
-        <!-- Center Glowing Emblem (1:1 with Screenshots, 0 watermark) -->
+        <!-- Center Glowing Emblem with Zero Watermark -->
         <div class="auth-logo-box">
-          <img src="/auth-logo.svg" alt="Nexor Unix SMS" class="auth-logo-img">
+          <img src="/logo.webp" alt="MSI SMS" class="auth-logo-img">
         </div>
 
         <div class="auth-header">
-          <h1 class="auth-title">${isLogin ? 'Nexor Login' : 'Become an Agent'}</h1>
+          <h1 class="auth-title">${isLogin ? 'MSI SMS' : 'Become an Agent'}</h1>
           <p class="auth-sub">${isLogin ? 'Please Sign in to continue' : "We'll verify and activate your account after signup."}</p>
         </div>
 
@@ -690,9 +779,9 @@ function shell() {
     <div class="ov" id="ov"></div>
     <aside class="side" id="side">
       <div class="brand">
-        <div class="logo"><img src="/logo-sm.webp" alt="Unix SMS"></div>
+        <div class="logo"><img src="/logo-sm.webp" alt="MSI SMS"></div>
         <div>
-          <b>Unix SMS</b>
+          <b>MSI SMS</b>
           <span>${cap(ME.role)}</span>
         </div>
         <button class="ib" id="close" aria-label="Close">${S('x')}</button>
@@ -1040,12 +1129,16 @@ document.addEventListener('click', async e => {
   const a = e.target.closest('[data-auth]');
   if (a) return showAuth(a.dataset.auth);
 
-  // Accordion Toggle in Sidebar (Collapsed by default, opens only on click!)
+  // Exclusive Accordion in Sidebar: opening one collapses any other open group
   const tg = e.target.closest('[data-toggle-grp]');
   if (tg) {
     const grp = tg.dataset.toggleGrp;
-    if (OPEN_GRPS.has(grp)) OPEN_GRPS.delete(grp);
-    else OPEN_GRPS.add(grp);
+    if (OPEN_GRPS.has(grp)) {
+      OPEN_GRPS.delete(grp);
+    } else {
+      OPEN_GRPS.clear();
+      OPEN_GRPS.add(grp);
+    }
     const nv = $('#nv');
     if (nv) nv.innerHTML = renderNav();
     return;
